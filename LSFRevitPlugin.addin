@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>LSF Modeler</Name>
+    <Assembly>C:\lsf_revit_plugin\LSFRevitPlugin\bin\Debug\net48\LSFRevitPlugin.dll</Assembly>
+    <AddInId>47de0149-1014-4630-9744-5944ef89d175</AddInId>
+    <FullClassName>LSFRevitPlugin.Core.App</FullClassName>
+    <VendorId>LSF</VendorId>
+    <VendorDescription>Projeto LSF Modeler</VendorDescription>
+  </AddIn>
+</RevitAddIns>

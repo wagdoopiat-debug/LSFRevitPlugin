@@ -1,0 +1,65 @@
+<Window x:Class="LSFRevitPlugin.UI.OpcoesGeracaoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="LSF Modeler - Opcoes de Geracao"
+        Width="360"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize">
+    <StackPanel Margin="16">
+
+        <TextBlock Text="Sistema:" FontWeight="Bold" Margin="0,0,0,4"/>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+            <RadioButton x:Name="RadioSistemaSteelFrame" Content="Steel Frame" GroupName="Sistema"
+                         Checked="RadioSistema_Checked" Margin="0,0,16,0"/>
+            <RadioButton x:Name="RadioSistemaDrywall" Content="Drywall" GroupName="Sistema"
+                         Checked="RadioSistema_Checked"/>
+        </StackPanel>
+
+        <TextBlock Text="Largura do perfil (alma):" FontWeight="Bold" Margin="0,4,0,4"/>
+
+        <StackPanel x:Name="PanelLarguraSteelFrame" Orientation="Horizontal" Margin="0,0,0,4">
+            <RadioButton x:Name="RadioLargura90SF" Content="90 mm" GroupName="LarguraSteelFrame" Margin="0,0,12,0"/>
+            <RadioButton x:Name="RadioLargura140SF" Content="140 mm" GroupName="LarguraSteelFrame" Margin="0,0,12,0"/>
+            <RadioButton x:Name="RadioLargura200SF" Content="200 mm" GroupName="LarguraSteelFrame"/>
+        </StackPanel>
+
+        <StackPanel x:Name="PanelLarguraDrywall" Orientation="Horizontal" Margin="0,0,0,4">
+            <RadioButton x:Name="RadioLargura48DW" Content="48 mm" GroupName="LarguraDrywall" Margin="0,0,12,0"/>
+            <RadioButton x:Name="RadioLargura70DW" Content="70 mm" GroupName="LarguraDrywall" Margin="0,0,12,0"/>
+            <RadioButton x:Name="RadioLargura90DW" Content="90 mm" GroupName="LarguraDrywall"/>
+        </StackPanel>
+
+        <TextBlock Text="Bitola (espessura da chapa):" FontWeight="Bold" Margin="0,4,0,4"/>
+
+        <StackPanel x:Name="PanelBitolaSteelFrame" Orientation="Horizontal" Margin="0,0,0,4">
+            <RadioButton x:Name="RadioBitola080" Content="0,80 mm" GroupName="Bitola" Margin="0,0,12,0"/>
+            <RadioButton x:Name="RadioBitola095" Content="0,95 mm" GroupName="Bitola" Margin="0,0,12,0"/>
+            <RadioButton x:Name="RadioBitola125" Content="1,25 mm" GroupName="Bitola"/>
+        </StackPanel>
+
+        <TextBlock x:Name="TextBitolaFixaDrywall" Text="0,50 mm (fixo para Drywall)" Margin="0,0,0,4"/>
+
+        <TextBlock Text="Espacamento entre montantes:" FontWeight="Bold" Margin="0,8,0,4"/>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+            <RadioButton x:Name="RadioBtn40" Content="40 cm" GroupName="Espacamento" Margin="0,0,16,0"/>
+            <RadioButton x:Name="RadioBtn60" Content="60 cm" GroupName="Espacamento"/>
+        </StackPanel>
+
+        <!-- Vaos detectados na parede. So aparece quando a parede tem portas/janelas. -->
+        <StackPanel x:Name="PanelVaos" Visibility="Collapsed" Margin="0,0,0,12">
+            <TextBlock Text="Vaos da parede:" FontWeight="Bold" Margin="0,0,0,4"/>
+            <StackPanel Orientation="Horizontal">
+                <Button x:Name="BtnAjustarVaos" Content="Ajustar vaos..." Padding="10,3"
+                        Click="BtnAjustarVaos_Click"/>
+                <TextBlock x:Name="TextResumoVaos" VerticalAlignment="Center" Margin="10,0,0,0"
+                           Foreground="Gray" TextWrapping="Wrap" MaxWidth="190"/>
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="BtnCancelar" Content="Cancelar" Width="80" Margin="0,0,8,0" Click="BtnCancelar_Click"/>
+            <Button x:Name="BtnGerar" Content="Gerar" Width="80" Click="BtnGerar_Click" IsDefault="True"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

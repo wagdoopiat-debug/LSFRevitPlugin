@@ -1,0 +1,53 @@
+<Window x:Class="LSFRevitPlugin.UI.AjustarVaosWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="LSF Modeler - Ajustar vaos"
+        Width="620"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" TextWrapping="Wrap" Margin="0,0,0,8"
+                   Text="Selecione um vao na lista e edite as medidas (em cm, a partir do piso). A deteccao automatica e o ponto de partida; so o que voce mudar e alterado."/>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="270"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <ListBox x:Name="ListaVaos" Grid.Column="0" Height="250"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     SelectionChanged="ListaVaos_SelectionChanged"/>
+
+            <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                <TextBlock x:Name="TextTituloVao" FontWeight="Bold" TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                <TextBlock Text="Largura (cm):"/>
+                <TextBox x:Name="TxtLargura" Margin="0,0,0,6" TextChanged="Campo_TextChanged"/>
+
+                <TextBlock x:Name="LabelSoleira" Text="Altura da soleira (cm):"/>
+                <TextBox x:Name="TxtSoleira" Margin="0,0,0,6" TextChanged="Campo_TextChanged"/>
+
+                <TextBlock Text="Altura do topo (cm):"/>
+                <TextBox x:Name="TxtTopo" Margin="0,0,0,6" TextChanged="Campo_TextChanged"/>
+
+                <TextBlock x:Name="TextAuto" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                <Button x:Name="BtnRestaurar" Content="Restaurar automatico" HorizontalAlignment="Left"
+                        Padding="10,3" Click="BtnRestaurar_Click"/>
+            </StackPanel>
+        </Grid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="BtnCancelar" Content="Cancelar" Width="80" Margin="0,0,8,0" Click="BtnCancelar_Click"/>
+            <Button x:Name="BtnAplicar" Content="Aplicar" Width="80" Click="BtnAplicar_Click" IsDefault="True"/>
+        </StackPanel>
+    </Grid>
+</Window>
