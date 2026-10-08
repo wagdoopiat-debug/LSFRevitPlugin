@@ -355,6 +355,25 @@ namespace LSFRevitPlugin.Services
 
                     DirectShape ds = DirectShape.CreateElement(doc, new ElementId(BuiltInCategory.OST_GenericModel));
                     ds.SetShape(solidos);
+
+                    // Persistencia da identidade da placa (Etapa 2) - ES adicional, mantendo Comments legado
+                    try
+                    {
+                        string tipoNome = PlacaCatalogo.NomeDoTipo(escolha.Tipo);
+                        string orientacaoStr = escolha.Orientacao.ToString();
+                        PertencenciaPlacaService.Gravar(
+                            ds,
+                            leitura.Parede.Id.IntegerValue,
+                            painel.Numero,
+                            numeroFace,
+                            tipoNome,
+                            orientacaoStr);
+                    }
+                    catch
+                    {
+                        // Nao bloquear criacao caso ES falhe; seguir padrao Etapa 1 (gravar ES sempre quando possivel)
+                    }
+
                     ds.Name = peca.Codigo;
 
                     Parameter marca = ds.get_Parameter(BuiltInParameter.ALL_MODEL_MARK);
