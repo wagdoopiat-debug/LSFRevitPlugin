@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using Autodesk.Revit.DB;
 using LSFRevitPlugin.Core;
+using LSFRevitPlugin.Domain.Models;
 
 namespace LSFRevitPlugin.Services
 {
@@ -54,10 +54,14 @@ namespace LSFRevitPlugin.Services
         }
     }
 
-    /// <summary>Leitura da estrutura gerada pelo plugin (elementos etiquetados no campo Comentarios).</summary>
+    /// <summary>
+    /// Leitura da estrutura gerada pelo plugin. A identidade (parede, painel, tipo e perfil) vem do
+    /// Extensible Storage gravado no elemento; quando ele nao tem o schema -- elementos gerados
+    /// antes dessa etapa existir -- o texto do campo Comentarios e usado no lugar.
+    /// </summary>
     public static class LeitorDeEstrutura
     {
-        public const string PrefixoEstrutura = "LSF | Parede ";
+        public const string PrefixoEstrutura = EstruturaTexto.Prefixo;
 
         public static List<ElementoEstruturaLido> Ler(Document doc, List<string> avisos)
         {
@@ -68,28 +72,14 @@ namespace LSFRevitPlugin.Services
                 .OfClass(typeof(DirectShape))
                 .Cast<DirectShape>())
             {
-                string comentario = ds.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString();
-                if (comentario == null || !comentario.StartsWith(PrefixoEstrutura, StringComparison.Ordinal)) continue;
-
-                string[] seg = comentario.Split(new[] { " | " }, StringSplitOptions.None);
-                int paredeId;
-                if (seg.Length < 4
-                    || !int.TryParse(seg[1].Replace("Parede ", ""), NumberStyles.Integer, CultureInfo.InvariantCulture, out paredeId))
-                {
-                    continue;
-                }
-
-                int painel;
-                if (!int.TryParse(seg[2].Replace("Painel ", ""), NumberStyles.Integer, CultureInfo.InvariantCulture, out painel))
-                {
-                    painel = 0;
-                }
+                IdentidadeEstrutural identidade;
+                if (!TentarIdentidade(ds, out identidade)) continue;
 
                 XYZ[] eixo;
-                if (!eixos.TryGetValue(paredeId, out eixo))
+                if (!eixos.TryGetValue(identidade.ParedeId, out eixo))
                 {
-                    eixo = EixoDaParede(doc, paredeId);
-                    eixos[paredeId] = eixo;
+                    eixo = EixoDaParede(doc, identidade.ParedeId);
+                    eixos[identidade.ParedeId] = eixo;
                 }
 
                 MedidaElemento medida = Medir(ds, eixo);
@@ -102,16 +92,29 @@ namespace LSFRevitPlugin.Services
                 lista.Add(new ElementoEstruturaLido
                 {
                     ElementoId = ds.Id.IntegerValue,
-                    ParedeId = paredeId,
-                    Painel = painel,
-                    Tipo = seg[3],
-                    Perfil = seg.Length > 4 ? string.Join(" | ", seg.Skip(4)) : "",
+                    ParedeId = identidade.ParedeId,
+                    Painel = identidade.NumeroPainel,
+                    Tipo = identidade.Tipo,
+                    Perfil = identidade.Perfil,
                     ComprimentoMm = medida.ComprimentoMm,
                     Medida = medida
                 });
             }
 
             return lista;
+        }
+
+        /// <summary>
+        /// Identidade do elemento: Extensible Storage primeiro, texto de Comentarios como
+        /// fallback dos elementos gerados antes do schema existir. Quem grava os dois e o
+        /// StructureGenerationService, na mesma chamada, entao eles nao divergem.
+        /// </summary>
+        private static bool TentarIdentidade(DirectShape ds, out IdentidadeEstrutural identidade)
+        {
+            if (PertencenciaPainelService.TentarLer(ds, out identidade)) return true;
+
+            string comentario = ds.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString();
+            return IdentidadeEstrutural.TentarExtrair(comentario, out identidade);
         }
 
         /// <summary>{direcao, normal} da parede, ou nulo se ela nao for reta.</summary>

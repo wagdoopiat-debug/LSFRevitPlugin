@@ -388,16 +388,26 @@ namespace LSFRevitPlugin.Services
             {
                 trans.Start();
 
-                // Grava no campo Comentarios do elemento: parede, painel, tipo e perfil. E esse
-                // texto que identifica, numa nova geracao, o que pertence a esta parede, e que o
-                // relatorio por painel vai ler.
+                // Identidade do elemento (parede, painel, tipo e perfil) gravada no Extensible
+                // Storage do proprio elemento. E a fonte de verdade da relacao elemento -> painel.
+                //
+                // No campo Comentarios vai o mesmo texto, para o usuario ler no modelo e para
+                // sustentar os elementos gerados antes deste schema existir. Os dois canais sao
+                // gravados aqui, juntos, entao nao podem divergir. Se o campo Comentarios estiver
+                // somente leitura, o Extensible Storage e gravado assim mesmo.
                 void Marcar(DirectShape ds, string tipo, int painel)
                 {
-                    Parameter comentario = ds?.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS);
+                    if (ds == null) return;
+
+                    string resumoPerfil = perfil.DescricaoResumo();
+
+                    PertencenciaPainelService.Gravar(ds, parede.Id.IntegerValue, painel, tipo, resumoPerfil);
+
+                    Parameter comentario = ds.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS);
                     if (comentario != null && !comentario.IsReadOnly)
                     {
                         comentario.Set(
-                            PrefixoEtiqueta(parede) + "Painel " + painel + " | " + tipo + " | " + perfil.DescricaoResumo());
+                            PrefixoEtiqueta(parede) + "Painel " + painel + " | " + tipo + " | " + resumoPerfil);
                     }
                 }
 
