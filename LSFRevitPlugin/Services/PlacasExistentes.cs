@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using Autodesk.Revit.DB;
 using LSFRevitPlugin.Domain.Boards;
+using LSFRevitPlugin.Domain.Models;
 
 namespace LSFRevitPlugin.Services
 {
@@ -81,73 +82,173 @@ namespace LSFRevitPlugin.Services
         private static PlacaExistente Interpretar(DirectShape ds)
         {
             string comentario = ds.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString();
-            if (comentario == null
-                || !comentario.StartsWith(PlacasService.PrefixoEtiqueta, StringComparison.Ordinal))
+
+            // Tentar ler identidade via ES primeiro
+            bool temIdentidadeEs = false;
+            int paredeEs = 0;
+            int painelEs = 0;
+            int faceEs = 0;
+            string tipoEs = string.Empty;
+            string orientacaoEs = string.Empty;
+
+            try
             {
-                return null;
-            }
-
-            string[] seg = comentario.Split(new[] { " | " }, StringSplitOptions.None);
-            if (seg.Length < 7) return null;
-
-            int parede;
-            int painel;
-            int face;
-            if (!Numero(seg[1], "Parede ", out parede)
-                || !Numero(seg[2], "Painel ", out painel)
-                || !Numero(seg[3], "Face ", out face))
-            {
-                return null;
-            }
-
-            var placa = new PlacaExistente
-            {
-                Elemento = ds,
-                Codigo = seg[5],
-                ParedeId = parede,
-                Painel = painel,
-                Face = face
-            };
-
-            foreach (TipoPlaca t in PlacaCatalogo.TodosOsTipos())
-            {
-                if (PlacaCatalogo.NomeDoTipo(t) == seg[4]) placa.Tipo = t;
-            }
-
-            for (int i = 6; i < seg.Length; i++)
-            {
-                string s = seg[i];
-
-                if (s.StartsWith("placa ", StringComparison.Ordinal))
+                if (PertencenciaPlacaService.TentarLer(ds, out IdentidadePlaca identEs) && identEs != null)
                 {
-                    string resto = s.Substring("placa ".Length);
-                    int sobra = resto.IndexOf(" (sobra de", StringComparison.Ordinal);
-                    placa.Reaproveitada = sobra >= 0;
-                    placa.PlacaOrigem = sobra >= 0 ? resto.Substring(0, sobra) : resto;
+                    temIdentidadeEs = true;
+                    paredeEs = identEs.ParedeId;
+                    painelEs = identEs.NumeroPainel;
+                    faceEs = identEs.Face;
+                    tipoEs = identEs.TipoPlaca ?? string.Empty;
+                    orientacaoEs = identEs.Orientacao ?? string.Empty;
                 }
-                else if (s.StartsWith("medida ", StringComparison.Ordinal))
+            }
+            catch
+            {
+                temIdentidadeEs = false;
+            }
+
+            if (!temIdentidadeEs)
+            {
+                if (comentario == null
+                    || !comentario.StartsWith(PlacasService.PrefixoEtiqueta, StringComparison.Ordinal))
                 {
-                    string[] lados = s.Substring("medida ".Length).Split('x');
-                    double a;
-                    double b;
-                    if (lados.Length == 2 && Decimal(lados[0], out a) && Decimal(lados[1], out b))
+                    return null;
+                }
+
+                string[] seg = comentario.Split(new[] { " | " }, StringSplitOptions.None);
+                if (seg.Length < 7) return null;
+
+                int parede;
+                int painel;
+                int face;
+                if (!Numero(seg[1], "Parede ", out parede)
+                    || !Numero(seg[2], "Painel ", out painel)
+                    || !Numero(seg[3], "Face ", out face))
+                {
+                    return null;
+                }
+
+                var placa = new PlacaExistente
+                {
+                    Elemento = ds,
+                    Codigo = seg[5],
+                    ParedeId = parede,
+                    Painel = painel,
+                    Face = face
+                };
+
+                foreach (TipoPlaca t in PlacaCatalogo.TodosOsTipos())
+                {
+                    if (PlacaCatalogo.NomeDoTipo(t) == seg[4]) placa.Tipo = t;
+                }
+
+                for (int i = 6; i < seg.Length; i++)
+                {
+                    string s = seg[i];
+
+                    if (s.StartsWith("placa ", StringComparison.Ordinal))
                     {
-                        placa.Medida = new MedidaPlaca(a, b);
+                        string resto = s.Substring("placa ".Length);
+                        int sobra = resto.IndexOf(" (sobra de", StringComparison.Ordinal);
+                        placa.Reaproveitada = sobra >= 0;
+                        placa.PlacaOrigem = sobra >= 0 ? resto.Substring(0, sobra) : resto;
+                    }
+                    else if (s.StartsWith("medida ", StringComparison.Ordinal))
+                    {
+                        string[] lados = s.Substring("medida ".Length).Split('x');
+                        double a;
+                        double b;
+                        if (lados.Length == 2 && Decimal(lados[0], out a) && Decimal(lados[1], out b))
+                        {
+                            placa.Medida = new MedidaPlaca(a, b);
+                        }
+                    }
+                    else if (s.StartsWith("orientacao ", StringComparison.Ordinal))
+                    {
+                        OrientacaoPlaca o;
+                        if (Enum.TryParse(s.Substring("orientacao ".Length), out o)) placa.Orientacao = o;
+                    }
+                    else if (s.StartsWith("area ", StringComparison.Ordinal))
+                    {
+                        double area;
+                        if (Decimal(s.Substring("area ".Length), out area)) placa.AreaLiquidaMm2 = area;
                     }
                 }
-                else if (s.StartsWith("orientacao ", StringComparison.Ordinal))
-                {
-                    OrientacaoPlaca o;
-                    if (Enum.TryParse(s.Substring("orientacao ".Length), out o)) placa.Orientacao = o;
-                }
-                else if (s.StartsWith("area ", StringComparison.Ordinal))
-                {
-                    double area;
-                    if (Decimal(s.Substring("area ".Length), out area)) placa.AreaLiquidaMm2 = area;
-                }
-            }
 
-            return placa;
+                return placa;
+            }
+            else
+            {
+                // ES presente: usar identidade do ES, metadados do Comments (se válido)
+                var placaEs = new PlacaExistente
+                {
+                    Elemento = ds,
+                    ParedeId = paredeEs,
+                    Painel = painelEs,
+                    Face = faceEs
+                };
+
+                // Mapear TipoPlaca por nome
+                foreach (TipoPlaca t in PlacaCatalogo.TodosOsTipos())
+                {
+                    if (PlacaCatalogo.NomeDoTipo(t) == tipoEs)
+                    {
+                        placaEs.Tipo = t;
+                        break;
+                    }
+                }
+
+                // Mapear Orientacao
+                OrientacaoPlaca orientacaoEnum;
+                if (Enum.TryParse(orientacaoEs, out orientacaoEnum))
+                {
+                    placaEs.Orientacao = orientacaoEnum;
+                }
+
+                // Metadados do Comments se disponível
+                if (comentario != null && comentario.StartsWith(PlacasService.PrefixoEtiqueta, StringComparison.Ordinal))
+                {
+                    string[] seg = comentario.Split(new[] { " | " }, StringSplitOptions.None);
+                    if (seg.Length >= 7)
+                    {
+                        placaEs.Codigo = seg[5];
+                        for (int i = 6; i < seg.Length; i++)
+                        {
+                            string s = seg[i];
+                            if (s.StartsWith("placa ", StringComparison.Ordinal))
+                            {
+                                string resto = s.Substring("placa ".Length);
+                                int sobra = resto.IndexOf(" (sobra de", StringComparison.Ordinal);
+                                placaEs.Reaproveitada = sobra >= 0;
+                                placaEs.PlacaOrigem = sobra >= 0 ? resto.Substring(0, sobra) : resto;
+                            }
+                            else if (s.StartsWith("medida ", StringComparison.Ordinal))
+                            {
+                                string[] lados = s.Substring("medida ".Length).Split('x');
+                                double a;
+                                double b;
+                                if (lados.Length == 2 && Decimal(lados[0], out a) && Decimal(lados[1], out b))
+                                {
+                                    placaEs.Medida = new MedidaPlaca(a, b);
+                                }
+                            }
+                            else if (s.StartsWith("orientacao ", StringComparison.Ordinal) && !placaEs.Orientacao.HasValue)
+                            {
+                                OrientacaoPlaca o;
+                                if (Enum.TryParse(s.Substring("orientacao ".Length), out o)) placaEs.Orientacao = o;
+                            }
+                            else if (s.StartsWith("area ", StringComparison.Ordinal))
+                            {
+                                double area;
+                                if (Decimal(s.Substring("area ".Length), out area)) placaEs.AreaLiquidaMm2 = area;
+                            }
+                        }
+                    }
+                }
+
+                return placaEs;
+            }
         }
 
         private static bool Numero(string texto, string prefixo, out int valor)
