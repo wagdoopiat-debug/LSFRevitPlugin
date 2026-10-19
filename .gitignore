@@ -34,3 +34,6 @@ Desktop.ini
 
 # Backups
 *_BACKUP_*/
+
+/LSFRevitPlugin/bin_ci/
+/Tests/LSFRevitPlugin.Domain.Tests/bin_ci/

@@ -126,43 +126,102 @@ namespace LSFRevitPlugin.Geometry
         private static List<XYZ> CriarContornoC(
             XYZ centro, XYZ dir, XYZ perp, double a, double w, double t, double labio, bool abertoParaFrente)
         {
-            var local = new List<(double U, double V)>();
+            List<(double U, double V)> local = SecaoMontante.ContornoC(a, w, t, labio, abertoParaFrente);
+            return local.Select(p => centro + dir.Multiply(p.U) + perp.Multiply(p.V)).ToList();
+        }
+    
+        /// <summary>
+        /// Cria o solido de um membro horizontal (ex.: blocking). A secao do perfil, no plano
+        /// perpendicular a direcao de extrusao, e desenhada em cima de <paramref name="pontoInicial"/>
+        /// e o solido se estende de <paramref name="pontoInicial"/> ao longo de
+        /// <paramref name="dirExtrusaoLong"/> por <paramref name="comprimentoExtrusaoLongInterna"/>.
+        /// Para a alma e a aba, vale a mesma convencao do montante vertical e da guia:
+        /// <paramref name="dirSecaoPerp"/> e a normal da parede e carrega a alma (profundidade),
+        /// e o terceiro eixo (vertical) carrega a aba (largura).
+        /// </summary>
+        public static Solid CriarSolidoMontanteHorizontal(
+            XYZ pontoInicial,
+            XYZ dirExtrusaoLong,
+            XYZ dirSecaoPerp,
+            double comprimentoExtrusaoLongInterna,
+            double larguraMm = 40,
+            double profundidadeMm = 90,
+            ElementId materialId = null,
+            double espessuraChapaMm = 0,
+            double labioMm = 0,
+            double deslocamentoTransversalInterno = 0,
+            bool? abertoParaFrente = null)
+        {
+            if (pontoInicial == null || dirExtrusaoLong == null || dirSecaoPerp == null) return null;
+            if (comprimentoExtrusaoLongInterna <= 0.0) return null;
 
-            bool temLabio = labio > t * 1.5 && labio < w - t;
-            if (temLabio)
+            XYZ dE = dirExtrusaoLong.Normalize();
+            XYZ dS = dirSecaoPerp.Normalize();
+            if (Math.Abs(dS.DotProduct(dE)) > 1e-6)
             {
-                local.Add((-a, -w));
-                local.Add((a, -w));
-                local.Add((a, -w + labio));
-                local.Add((a - t, -w + labio));
-                local.Add((a - t, -w + t));
-                local.Add((-a + t, -w + t));
-                local.Add((-a + t, w - t));
-                local.Add((a - t, w - t));
-                local.Add((a - t, w - labio));
-                local.Add((a, w - labio));
-                local.Add((a, w));
-                local.Add((-a, w));
+                dS = (dS - dE.Multiply(dS.DotProduct(dE))).Normalize();
+            }
+
+            // Segundo eixo da secao: perpendicular, ao mesmo tempo, ao eixo de extrusao (dE) e
+            // ao eixo recebido (dS). Para um membro horizontal, dS e a normal da parede e dV e a
+            // vertical. A secao TEM de ficar num plano perpendicular a dE; se um dos eixos da
+            // secao for o proprio dE, CreateExtrusionGeometry rejeita o solido.
+            XYZ dV = dE.CrossProduct(dS);
+            if (dV.GetLength() < 1e-9)
+            {
+                dV = XYZ.BasisZ.CrossProduct(dE);
+                if (dV.GetLength() < 1e-9) dV = XYZ.BasisY;
+            }
+            dV = dV.Normalize();
+
+            double larguraInterna = RevitVersionAdapter.MilimetrosParaInterno(larguraMm);
+            double profundidadeInterna = RevitVersionAdapter.MilimetrosParaInterno(profundidadeMm);
+
+            double halfW = larguraInterna / 2.0;
+            double halfD = profundidadeInterna / 2.0;
+
+            XYZ centro = pontoInicial;
+            if (Math.Abs(deslocamentoTransversalInterno) > 1e-12)
+            {
+                centro = pontoInicial + dV.Multiply(deslocamentoTransversalInterno);
+            }
+
+            bool afrente = abertoParaFrente ?? AbrirParaFrenteDaDirecao;
+
+            List<XYZ> pontos;
+            if (espessuraChapaMm > 0)
+            {
+                double t = SecaoPerfil.EspessuraModeladaInterna(espessuraChapaMm);
+                double labio = RevitVersionAdapter.MilimetrosParaInterno(Math.Max(0, labioMm));
+                pontos = CriarContornoC(
+                    centro,
+                    dV,
+                    dS,
+                    halfW,
+                    halfD,
+                    t,
+                    labio,
+                    afrente);
             }
             else
             {
-                local.Add((-a, -w));
-                local.Add((a, -w));
-                local.Add((a, -w + t));
-                local.Add((-a + t, -w + t));
-                local.Add((-a + t, w - t));
-                local.Add((a, w - t));
-                local.Add((a, w));
-                local.Add((-a, w));
+                XYZ offW = dV.Multiply(halfW);
+                XYZ offD = dS.Multiply(halfD);
+                pontos = new List<XYZ>
+                {
+                    centro - offW - offD,
+                    centro + offW - offD,
+                    centro + offW + offD,
+                    centro - offW + offD,
+                };
             }
 
-            if (!abertoParaFrente)
-            {
-                // Espelha em u e inverte a ordem, para manter o mesmo sentido de percurso.
-                local = local.Select(p => (-p.U, p.V)).Reverse().ToList();
-            }
+            var loops = new List<CurveLoop> { SecaoPerfil.CriarLoop(pontos) };
+            var opcoes = new SolidOptions(
+                materialId ?? ElementId.InvalidElementId,
+                ElementId.InvalidElementId);
 
-            return local.Select(p => centro + dir.Multiply(p.U) + perp.Multiply(p.V)).ToList();
+            return GeometryCreationUtilities.CreateExtrusionGeometry(loops, dE, comprimentoExtrusaoLongInterna, opcoes);
         }
     }
 }

@@ -23,15 +23,19 @@ namespace LSFRevitPlugin.Services
         /// vaosPreDetectados: vaos (portas/janelas) ja detectados e, possivelmente, com as
         /// medidas ajustadas pelo usuario (largura, soleira, topo). Se for null, os vaos sao
         /// detectados aqui com as medidas automaticas das esquadrias.
+        ///
+        /// blocking: configuracao das fileiras de blocking horizontal. Se for null, e montada a
+        /// partir das preferencias salvas (compatibilidade com as chamadas anteriores). As alturas
+        /// das juntas das placas sao preenchidas aqui, com os dados REAIS das placas do projeto.
         /// </summary>
         public ResultadoGeracao GerarEstrutura(
             Document doc, Wall parede, double espacamentoCm = 40.0, PerfilSpec perfil = null,
-            List<OpeningInfo> vaosPreDetectados = null)
+            List<OpeningInfo> vaosPreDetectados = null, BlockingConfig blocking = null)
         {
             using (var grupo = new TransactionGroup(doc, "LSF - Gerar/regenerar estrutura da parede"))
             {
                 grupo.Start();
-                ResultadoGeracao resultado = GerarEstruturaNoGrupo(doc, parede, espacamentoCm, perfil, vaosPreDetectados);
+                ResultadoGeracao resultado = GerarEstruturaNoGrupo(doc, parede, espacamentoCm, perfil, vaosPreDetectados, blocking);
                 grupo.Assimilate();
                 return resultado;
             }
@@ -39,7 +43,7 @@ namespace LSFRevitPlugin.Services
 
         private ResultadoGeracao GerarEstruturaNoGrupo(
             Document doc, Wall parede, double espacamentoCm, PerfilSpec perfil,
-            List<OpeningInfo> vaosPreDetectados)
+            List<OpeningInfo> vaosPreDetectados, BlockingConfig blocking)
         {
             if (perfil == null)
             {
@@ -596,6 +600,42 @@ namespace LSFRevitPlugin.Services
                     Marcar(dsCripple, "Cripple stud", PainelNaPosicao(elCripple.Ponto));
                     criados++;
                 }
+
+                // Blocking horizontal: opcional, vindo da janela de opcoes (ou das preferencias
+                // salvas, quando nao informado). O alinhamento as juntas das placas so usa dados
+                // REAIS das placas da parede; sem placas, quem resolve avisa e cai para as fileiras
+                // configuradas, nunca presumindo alturas.
+                var avisosBlocking = new List<string>();
+                BlockingConfig bcfg = blocking ?? PreferenciasGeracao.CriarBlockingConfig();
+                bcfg.Validar();
+
+                if (!bcfg.Habilitado)
+                {
+                    avisosBlocking.Add("Blocking: desabilitado.");
+                }
+                else
+                {
+                    if (bcfg.AlinharJuntasPlacas)
+                    {
+                        bcfg.AlturasJuntasPlacasCm = JuntasPlacasService.LerAlturasJuntasHorizontaisCm(doc, parede, avisosBlocking);
+                    }
+
+                    bool temAlturasExplicitas = bcfg.AlturasRelativasCm != null && bcfg.AlturasRelativasCm.Count > 0;
+                    bool temJuntas = bcfg.AlinharJuntasPlacas
+                        && bcfg.AlturasJuntasPlacasCm != null && bcfg.AlturasJuntasPlacasCm.Count > 0;
+
+                    if (bcfg.Fileiras <= 0 && !temAlturasExplicitas && !temJuntas)
+                    {
+                        avisosBlocking.Add("Blocking: nenhuma fileira configurada (defina alturas, fileiras ou alinhe às juntas das placas).");
+                    }
+                    else
+                    {
+                        resultado.BlockingCriados = BlockingService.Gerar(
+                            doc, parede, direcaoPrincipal, inicioParede, pontosGrade, vaos,
+                            bcfg, perfil, matGuia, PainelNaPosicao, Marcar, avisosBlocking);
+                    }
+                }
+                resultado.Avisos.AddRange(avisosBlocking);
 
                 // Guias (trilhos horizontais inferior e superior), em "U", painel por painel. A
                 // guia de cada painel vai de uma divisa a outra; nas pontas reais da parede ela usa

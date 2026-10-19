@@ -70,7 +70,8 @@ namespace LSFRevitPlugin.Core
                 PerfilSpec perfilEscolhido = janelaOpcoes.PerfilEscolhido;
 
                 var servico = new StructureGenerationService();
-                ResultadoGeracao r = servico.GerarEstrutura(doc, parede, espacamentoCm, perfilEscolhido, vaos);
+                ResultadoGeracao r = servico.GerarEstrutura(
+                    doc, parede, espacamentoCm, perfilEscolhido, vaos, janelaOpcoes.Blocking);
 
                 string aviso = r.VaoExcedeuLimite
                     ? $"\n\nATENCAO: maior vao entre montantes = {r.MaiorVaoCm:F1}cm (acima do limite de {espacamentoCm:F0}cm)."
@@ -87,6 +88,20 @@ namespace LSFRevitPlugin.Core
                 string infoGuias = $"\n\nGuias geradas: {r.GuiasCriadas} (superior e inferior, largura {perfilEscolhido.LarguraAlmaMm:F0}mm).{notaPortas}";
 
                 string infoPerfil = $"\n\nPerfil selecionado: {perfilEscolhido.DescricaoResumo()} (aplicado aos montantes e as guias).";
+
+                // Diagnostico do blocking horizontal: conta o que foi criado e lista os motivos
+                // registrados quando nada foi gerado.
+                string infoBlocking = r.BlockingCriados > 0
+                    ? $"\n\nBlocking horizontal: {r.BlockingCriados} elemento(s) criado(s)."
+                    : "\n\nBlocking horizontal: nenhum elemento criado.";
+                if (janelaOpcoes.Blocking != null && janelaOpcoes.Blocking.Habilitado)
+                {
+                    infoBlocking += "\nFinalidade: " + janelaOpcoes.Blocking.Finalidade.Descricao() + ".";
+                }
+                if (r.Avisos != null && r.Avisos.Count > 0)
+                {
+                    infoBlocking += "\n" + string.Join("\n", r.Avisos);
+                }
 
                 // Paineis da parede (gravados pelo botao "Painelizar").
                 bool painelizacaoDesatualizada;
@@ -111,7 +126,7 @@ namespace LSFRevitPlugin.Core
 
                 TaskDialog.Show(
                     "LSF Modeler",
-                    $"{r.TotalCriados} montantes gerados ({r.MontantesPrincipais} principais + {r.MontantesH} do H ({r.EncontrosL} L, {r.HJaExistentes} ja existentes) + {r.MontantesTriplo} do Triplo ({r.EncontrosT} T, {r.TriploJaExistentes} ja existentes) + {r.MontantesQuadruplo} do Quadruplo ({r.EncontrosCruz} +, {r.QuadruploJaExistentes} ja existentes), {r.Reposicionados} pulado(s) por colisao, {r.IsoladosPuladosPorT} isolado(s) pulado(s) por T){infoVaos}{infoGuias}{infoPerfil}{infoPaineis}{aviso}");
+                    $"{r.TotalCriados} montantes gerados ({r.MontantesPrincipais} principais + {r.MontantesH} do H ({r.EncontrosL} L, {r.HJaExistentes} ja existentes) + {r.MontantesTriplo} do Triplo ({r.EncontrosT} T, {r.TriploJaExistentes} ja existentes) + {r.MontantesQuadruplo} do Quadruplo ({r.EncontrosCruz} +, {r.QuadruploJaExistentes} ja existentes), {r.Reposicionados} pulado(s) por colisao, {r.IsoladosPuladosPorT} isolado(s) pulado(s) por T){infoVaos}{infoGuias}{infoPerfil}{infoPaineis}{infoBlocking}{aviso}");
 
                 return Result.Succeeded;
             }

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace LSFRevitPlugin.Domain.Models
 {
     public class ResultadoGeracao
@@ -23,5 +25,8 @@ namespace LSFRevitPlugin.Domain.Models
         public int ElementosDeVao { get; set; }
 
         public int GuiasCriadas { get; set; }
+
+        public int BlockingCriados { get; set; }
+        public List<string> Avisos { get; set; } = new List<string>();
     }
 }

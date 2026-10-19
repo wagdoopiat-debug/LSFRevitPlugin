@@ -51,6 +51,9 @@ Os criterios de aceitacao de cada item estao em CHECKLIST.md (TC-001 a TC-057).
 - [x] Botao Painelizar paredes: usuario clica os pontos onde cada painel termina
 - [x] Redefinir e remover painelizacao; aviso de painelizacao desatualizada
 - [x] Geracao da estrutura por painel (montantes de extremidade proprios, grade recomecando, guias cortadas nas divisas)
+- [x] Identidade do elemento gravada em Extensible Storage (parede + painel + tipo + perfil); o texto de Comentarios segue igual, como informacao humana e fallback de projetos antigos
+- [ ] Placas e parafusos com a identidade de painel lida do Extensible Storage em vez do texto de Comentarios
+- [ ] Abertura que atravessa a divisa de dois paineis: hoje os dois montantes da divisa sao suprimidos e o reforco vai todo para o painel do centro do vao. Exige regra propria
 
 ## Fase 8 - Placas de fechamento [EM VALIDACAO]
 Feito e validado:
@@ -98,11 +101,11 @@ Aguardando teste no Revit:
 12. [ ] Validar com o fabricante as regras de fixacao de OSB e Glasroc X (TC-057)
 
 ## Fase 12 - Modulos futuros (nao iniciados)
-- [ ] Laje (FloorFraming, In-Line Framing)
+- [~] Laje (FloorFraming, In-Line Framing) - EM ANDAMENTO: modulo de lajes com geracao/edicao, trelica (Warren/Pratt/Howe/...), fixadores com niveis de detalhe, telha TP40 recortada, enchimento, paginacao de placas, caixao, gusset, travamento das trelicas, fitas tensionadas (provisorio) e alinhamento de vigas a montantes. Pendente: E2E visual no Revit 2021, dimensionamento estrutural dos provisorios e `docs/LAJE.md` (rev. 2). Detalhe em `.continuity/CURRENT_STATE.md`.
 - [ ] Radier (FoundationRadier)
 - [ ] Telhado
 - [ ] Diferentes tipos de treliças e formas de montar (BACK TO BACK)
-- [ ] Contraventamento em K nas paredes
+- [ ] Travamento interno de painel com guia + montante (2 guias e 1 montante por no: ~36 cm na modulacao de 40 cm, ~56 cm na de 60 cm). Nao e contraventamento em K e nao atravessa a parede: fecha o no dentro do painel
 - [ ] Exportacao DXF/CAM
 - [ ] Instalador e assinatura digital (acaba com a pergunta de carregar o plugin a cada compilacao)
 
@@ -111,3 +114,20 @@ Aguardando teste no Revit:
 - Recortes preferencialmente no meio da parede, longe das extremidades e das aberturas
 - Recortes de porta e janela usam a medida automatica da esquadria
 - Nada em Domain/ referencia Autodesk.Revit.DB (garante os testes unitarios sem abrir o Revit)
+## Fase 13 - Melhorias UX / nomenclatura de identificações (futuro, não implementado)
+
+- [ ] **Revisão de nomenclatura visual** (futuro): avaliar simplificação e padronização dos códigos apresentados ao usuário (montantes, guias, placas, reforços, vergas, contravergas, painéis e demais peças LSF), tornando a identificação mais intuitiva sem perder clareza.
+
+- [ ] **Separação entre identidade técnica e visual** (requisito arquitetural futuro): a eventual simplificação da nomenclatura apresentada ao usuário **NÃO deve comprometer** a identidade técnica interna dos elementos, persistência, regeneração, rastreabilidade, associação ao painel, quantitativos, identificação de elementos existentes, compatibilidade com projetos existentes ou referências utilizadas internamente pelo plugin. Quando necessário, manter separadas: (1) identificação/código amigável apresentado ao usuário e (2) identidade técnica interna estável utilizada pelo software.
+
+- [ ] **Consistência entre elementos** (futuro): definir padrão coerente de prefixos para diferentes tipos (exemplos conceituais apenas: M/Montante, G/Guia, V/Verga, CV/Contraverga, R/Reforço, P/Placa). Estes exemplos são **apenas ilustrativos** e não representam decisão definitiva de nomenclatura.
+
+- [ ] **Preservação de compatibilidade retroativa** (futuro): qualquer alteração de nomenclatura visual deve preservar leitura/reconhecimento de elementos existentes (fallback legado obrigatório). A identidade técnica persistida (incluindo Extensible Storage) deve permanecer estável.
+
+- [ ] **Formalização futura** (futuro): a decisão detalhada sobre arquitetura de nomenclatura (separação visual/técnica) poderá ser registrada em `DECISOES.md` quando esta melhoria for efetivamente implementada. Esta entrada no ROADMAP é apenas um requisito futuro, não uma decisão congelada.
+
+## Fase 7b - Identidade por painel (placas) [OK]
+- [x] Identidade das placas gravada em Extensible Storage (ParedeId, NumeroPainel, Face, TipoPlaca, Orientacao) com schema LSFPertencenciaPlacas (GUID c148a621-c5af-420a-8610-6973e97354d1)
+- [x] Comentários de placas mantidos no formato legado (compatibilidade retroativa)
+- [x] PlacasService grava ES ao criar peças (sem alterar lógica de paginação/cortes/juntas/sobras)
+- [x] Codec de legado para placas (IdentidadePlaca) com testes unitários

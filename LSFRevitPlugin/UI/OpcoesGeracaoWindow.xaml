@@ -57,6 +57,40 @@
             </StackPanel>
         </StackPanel>
 
+        <CheckBox x:Name="ChkBlocking" Content="Gerar blocking horizontal interno" Margin="0,8,0,0"
+                  Checked="ChkBlocking_Checked" Unchecked="ChkBlocking_Checked"/>
+
+        <StackPanel x:Name="PanelBlocking" Visibility="Collapsed" Margin="20,4,0,8">
+            <TextBlock Text="Finalidade:" FontWeight="Bold" Margin="0,0,0,2"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                <RadioButton x:Name="RadioBlockingTravamento" Content="Travamento" GroupName="BlockingFinalidade" Margin="0,0,12,0"/>
+                <RadioButton x:Name="RadioBlockingApoio" Content="Apoio das placas" GroupName="BlockingFinalidade" Margin="0,0,12,0"/>
+                <RadioButton x:Name="RadioBlockingAmbas" Content="Ambas" GroupName="BlockingFinalidade"/>
+            </StackPanel>
+
+            <TextBlock Text="Alturas (cm, separadas por ; ):" FontWeight="Bold" Margin="0,0,0,2"/>
+            <TextBox x:Name="TxtBlockingAlturas" Margin="0,0,0,2"
+                     ToolTip="Ex.: 100; 200; 240. Vazio = fileiras automaticas ou juntas das placas."/>
+            <TextBlock Text="Vazio usa as fileiras automaticas abaixo." Foreground="Gray" FontSize="11" Margin="0,0,0,6"/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                <TextBlock Text="Fileiras automaticas:" VerticalAlignment="Center"/>
+                <TextBox x:Name="TxtBlockingFileiras" Width="40" Margin="4,0,0,0" ToolTip="1-5"/>
+            </StackPanel>
+
+            <CheckBox x:Name="ChkBlockingAlinharJuntas"
+                      Content="Alinhar as juntas horizontais das placas (quando existirem)"/>
+
+            <TextBlock Text="Distribuicao:" FontWeight="Bold" Margin="0,6,0,2"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                <RadioButton x:Name="RadioBlockingTodos" Content="Todos os montantes"
+                             GroupName="BlockingDistribuicao" Margin="0,0,12,0"/>
+                <RadioButton x:Name="RadioBlockingAlternado" Content="Alternado"
+                             GroupName="BlockingDistribuicao" Margin="0,0,12,0"/>
+            </StackPanel>
+            <CheckBox x:Name="ChkBlockingAlternarInverter"
+                      Content="Inverter o montante inicial (alternado)"/>
+        </StackPanel>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="BtnCancelar" Content="Cancelar" Width="80" Margin="0,0,8,0" Click="BtnCancelar_Click"/>
             <Button x:Name="BtnGerar" Content="Gerar" Width="80" Click="BtnGerar_Click" IsDefault="True"/>

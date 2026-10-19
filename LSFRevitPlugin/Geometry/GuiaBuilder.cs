@@ -32,34 +32,13 @@ namespace LSFRevitPlugin.Geometry
             XYZ direcaoNormalizada = direcaoParede.Normalize();
             XYZ direcaoPerpendicular = XYZ.BasisZ.CrossProduct(direcaoNormalizada).Normalize();
 
-            double t = SecaoPerfil.EspessuraModeladaInterna(perfil.EspessuraChapaMm);
-            double almaMontanteInterna = RevitVersionAdapter.MilimetrosParaInterno(perfil.LarguraAlmaMm);
-            double alturaAbaInterna = RevitVersionAdapter.MilimetrosParaInterno(perfil.AbaMm);
-
-            // Largura externa da guia = alma do montante + 2 chapas: o montante encaixa por dentro.
-            double meiaLargura = (almaMontanteInterna / 2.0) + t;
-
             XYZ origem = new XYZ(inicioParede.X, inicioParede.Y, inicioParede.Z + zBase);
 
-            // Contorno no plano perpendicular a parede: v ao longo de direcaoPerpendicular, z na vertical.
-            // Desenhado "aberto para cima" (alma em z = 0..t).
-            var local = new List<(double V, double Z)>
-            {
-                (-meiaLargura, 0),
-                (meiaLargura, 0),
-                (meiaLargura, alturaAbaInterna),
-                (meiaLargura - t, alturaAbaInterna),
-                (meiaLargura - t, t),
-                (-meiaLargura + t, t),
-                (-meiaLargura + t, alturaAbaInterna),
-                (-meiaLargura, alturaAbaInterna),
-            };
-
-            if (!abertoParaCima)
-            {
-                // Espelha em z e inverte a ordem, para manter o mesmo sentido de percurso.
-                local = local.Select(p => (p.V, alturaAbaInterna - p.Z)).Reverse().ToList();
-            }
+            // Contorno no plano perpendicular a parede (v em direcaoPerpendicular, z na vertical).
+            // A secao em "U" (alma + 2 abas, sem labios) vem de SecaoGuia, compartilhada com o
+            // blocking -- assim as duas pecas usam exatamente a mesma secao de guia/track.
+            List<(double V, double Z)> local = SecaoGuia.ContornoU(
+                perfil.LarguraAlmaMm, perfil.AbaMm, perfil.EspessuraChapaMm, abertoParaCima);
 
             List<XYZ> pontos = local
                 .Select(p => origem + direcaoPerpendicular.Multiply(p.V) + XYZ.BasisZ.Multiply(p.Z))

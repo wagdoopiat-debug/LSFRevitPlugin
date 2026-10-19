@@ -38,5 +38,14 @@ namespace LSFRevitPlugin.Core
         {
             return valorMm / MilimetrosPorPe;
         }
+
+        /// <summary>
+        /// Converte unidades internas do Revit (pes) para milimetros, usado ao ler geometria
+        /// do Revit de volta para o Domain (contornos, cotas).
+        /// </summary>
+        public static double InternoParaMilimetros(double valorInterno)
+        {
+            return valorInterno * MilimetrosPorPe;
+        }
     }
 }

@@ -54,6 +54,28 @@ namespace LSFRevitPlugin.Core
 
             panel.AddItem(quantitativoData);
 
+            PushButtonData criarLajeData = new PushButtonData(
+                "LSFModelerCriarLaje",
+                "Criar\nlaje",
+                assemblyPath,
+                "LSFRevitPlugin.Core.LajeCommand");
+
+            criarLajeData.ToolTip = "Cria uma laje LSF: escolha a origem do contorno (piso existente do Revit ou desenhar o contorno), configure sistema, tipo de viga, perfil, orientacao, espacamento, telha/placas e cota, e confira a previa antes de gerar.";
+
+            panel.AddItem(criarLajeData);
+
+            PushButtonData editarLajeData = new PushButtonData(
+                "LSFModelerEditarLaje",
+                "Editar\nlaje",
+                assemblyPath,
+                "LSFRevitPlugin.Core.EditarLajeCommand");
+
+            editarLajeData.ToolTip = "Edita/regenera uma laje ja criada: escolhe a laje pelo registro do documento, reabre a configuracao preenchida e gera de novo mantendo o mesmo identificador.";
+
+            panel.AddItem(editarLajeData);
+
+
+
             return Result.Succeeded;
         }
 

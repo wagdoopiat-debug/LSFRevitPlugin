@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using LSFRevitPlugin.Domain.Models;
@@ -74,6 +75,47 @@ namespace LSFRevitPlugin.Core
             {
                 // Falha ao salvar preferencia nao deve interromper o fluxo de geracao.
             }
+        }
+
+        public static bool BlockingHabilitado { get; set; }
+        public static int BlockingFileiras { get; set; } = 1;
+
+        /// <summary>Finalidade das fileiras de blocking (travamento, apoio das placas ou ambas).</summary>
+        public static FinalidadeBlocking BlockingFinalidade { get; set; } = FinalidadeBlocking.Ambas;
+
+        /// <summary>
+        /// Alturas independentes das fileiras de blocking, em cm a partir da base da parede,
+        /// na ordem informada pelo usuario. Vazio = usar fileiras automaticas ou o alinhamento
+        /// as juntas das placas (quando solicitado e houver dados reais).
+        /// </summary>
+        public static List<double> BlockingAlturasCm { get; set; } = new List<double>();
+
+        /// <summary>Quando true, tenta alinhar as fileiras as juntas horizontais reais das placas.</summary>
+        public static bool BlockingAlinharJuntas { get; set; }
+
+        /// <summary>Distribuicao das fileiras de blocking (todos os vaos ou alternados).</summary>
+        public static DistribuicaoBlocking BlockingDistribuicao { get; set; } = DistribuicaoBlocking.Todos;
+
+        /// <summary>Inverte o montante inicial da distribuicao alternada.</summary>
+        public static bool BlockingAlternarInvertido { get; set; }
+
+        /// <summary>
+        /// Monta um <see cref="BlockingConfig"/> com as preferencias atuais. As alturas das juntas
+        /// das placas NAO sao preenchidas aqui: quem tem acesso ao projeto (a geracao) le as juntas
+        /// reais e as informa, para o plugin nunca presumir alturas sem dados das placas.
+        /// </summary>
+        public static BlockingConfig CriarBlockingConfig()
+        {
+            return new BlockingConfig
+            {
+                Habilitado = BlockingHabilitado,
+                Fileiras = BlockingFileiras,
+                Finalidade = BlockingFinalidade,
+                AlturasRelativasCm = new List<double>(BlockingAlturasCm ?? new List<double>()),
+                AlinharJuntasPlacas = BlockingAlinharJuntas,
+                Distribuicao = BlockingDistribuicao,
+                AlternarInvertido = BlockingAlternarInvertido
+            };
         }
     }
 }

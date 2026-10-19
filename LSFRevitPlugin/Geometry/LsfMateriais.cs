@@ -12,11 +12,22 @@ namespace LSFRevitPlugin.Geometry
     {
         Montante,
         Guia,
-        ReforcoVao
+        ReforcoVao,
+        VigaLaje,
+        GuiaBordaLaje,
+        OsbLaje,
+        CimenticiaLaje,
+        TelhaLaje,
+        ArgamassaLaje,
+        EnchimentoLaje,
+        ParafusoLaje,
+        GussetLaje,
+        TravamentoLaje,
+        FitaLaje
     }
 
     /// <summary>
-    /// Ids dos tres materiais de um sistema, criados uma unica vez por geracao.
+    /// Ids dos tres materiais de estrutura de um sistema, criados uma unica vez por geracao.
     /// </summary>
     public sealed class MateriaisLsf
     {
@@ -89,6 +100,17 @@ namespace LSFRevitPlugin.Geometry
                 {
                     case PapelElemento.Montante: return new Color(46, 134, 222);   // azul
                     case PapelElemento.Guia: return new Color(27, 79, 140);        // azul escuro
+                    case PapelElemento.VigaLaje: return new Color(76, 175, 80);    // verde
+                    case PapelElemento.GuiaBordaLaje: return new Color(56, 142, 60); // verde escuro
+                    case PapelElemento.OsbLaje: return new Color(210, 180, 140);    // tan (madeira)
+                    case PapelElemento.CimenticiaLaje: return new Color(158, 158, 158); // cinza
+                    case PapelElemento.TelhaLaje: return new Color(96, 125, 139);    // azul aco
+                    case PapelElemento.ArgamassaLaje: return new Color(189, 189, 189); // cinza claro
+                    case PapelElemento.EnchimentoLaje: return new Color(166, 166, 166); // cinza medio
+                    case PapelElemento.ParafusoLaje: return new Color(30, 30, 30);    // quase preto
+                    case PapelElemento.GussetLaje: return new Color(90, 110, 140);   // cinza azul
+                    case PapelElemento.TravamentoLaje: return new Color(38, 110, 50); // verde musgo
+                    case PapelElemento.FitaLaje: return new Color(180, 170, 60);       // amarelo fosco
                     default: return new Color(0, 184, 212);                        // ciano
                 }
             }
@@ -97,6 +119,16 @@ namespace LSFRevitPlugin.Geometry
             {
                 case PapelElemento.Montante: return new Color(242, 140, 40);       // laranja
                 case PapelElemento.Guia: return new Color(181, 69, 27);            // tijolo
+                case PapelElemento.VigaLaje: return new Color(156, 39, 176);       // roxo
+                case PapelElemento.GuiaBordaLaje: return new Color(123, 31, 162);  // roxo escuro
+                case PapelElemento.OsbLaje: return new Color(191, 168, 120);       // tan (madeira)
+                case PapelElemento.CimenticiaLaje: return new Color(120, 120, 120); // cinza
+                case PapelElemento.TelhaLaje: return new Color(69, 90, 100);       // azul aco
+                case PapelElemento.ArgamassaLaje: return new Color(149, 149, 149); // cinza claro
+                case PapelElemento.EnchimentoLaje: return new Color(130, 130, 130); // cinza medio
+                case PapelElemento.ParafusoLaje: return new Color(20, 20, 20);     // quase preto
+                case PapelElemento.TravamentoLaje: return new Color(94, 53, 177);   // roxo profundo
+                case PapelElemento.FitaLaje: return new Color(230, 210, 40);        // amarelo
                 default: return new Color(242, 197, 0);                            // amarelo
             }
         }
