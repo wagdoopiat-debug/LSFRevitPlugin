@@ -1,152 +1,137 @@
-<Window x:Class="LSFRevitPlugin.UI.LajeConfigWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="LSF Modeler - Configurar laje"
-        Width="520"
-        Height="720"
-        MinWidth="420"
-        MinHeight="360"
-        WindowStartupLocation="CenterScreen"
-        ResizeMode="CanResizeWithGrip">
+<Window x:Class="LSFRevitPlugin.UI.LajeConfigWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="LSF Modeler - Configurar laje" Width="520" Height="720" MinWidth="420" MinHeight="360" WindowStartupLocation="CenterScreen" ResizeMode="CanResizeWithGrip">
     <DockPanel Margin="16">
 
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-            <Button x:Name="BtnAtualizar" Content="Atualizar previa" Padding="10,3" Margin="0,0,8,0"
-                    Click="BtnAtualizar_Click"/>
-            <Button x:Name="BtnCancelar" Content="Cancelar" Width="80" Margin="0,0,8,0" Click="BtnCancelar_Click"/>
-            <Button x:Name="BtnConfirmar" Content="Gerar" Width="80" Click="BtnConfirmar_Click" IsDefault="True"/>
+            <Button x:Name="BtnAtualizar" Content="Atualizar previa" Padding="10,3" Margin="0,0,8,0" Click="BtnAtualizar_Click" />
+            <Button x:Name="BtnCancelar" Content="Cancelar" Width="80" Margin="0,0,8,0" Click="BtnCancelar_Click" />
+            <Button x:Name="BtnConfirmar" Content="Gerar" Width="80" Click="BtnConfirmar_Click" IsDefault="True" />
         </StackPanel>
 
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel>
 
-                <TextBlock x:Name="TextOrigem" FontWeight="Bold" Margin="0,0,0,10" TextWrapping="Wrap"/>
+                <TextBlock x:Name="TextOrigem" FontWeight="Bold" Margin="0,0,0,10" TextWrapping="Wrap" />
 
-                <TextBlock Text="Sistema de laje:" FontWeight="Bold" Margin="0,0,0,4"/>
-                <ComboBox x:Name="ComboSistema" Margin="0,0,0,8"/>
+                <TextBlock Text="Sistema de laje:" FontWeight="Bold" Margin="0,0,0,4" />
+                <ComboBox x:Name="ComboSistema" Margin="0,0,0,8" />
 
-                <TextBlock Text="Tipo de laje:" FontWeight="Bold" Margin="0,0,0,4"/>
+                <TextBlock Text="Tipo de laje:" FontWeight="Bold" Margin="0,0,0,4" />
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <RadioButton x:Name="RadioTipoUmida" Content="Umida (telha + argamassa)" GroupName="TipoLaje"
-                                 Checked="RadioTipo_Checked" Margin="0,0,16,0"/>
-                    <RadioButton x:Name="RadioTipoSeca" Content="Seca (piso seco)" GroupName="TipoLaje"
-                                 Checked="RadioTipo_Checked"/>
+                    <RadioButton x:Name="RadioTipoUmida" Content="Umida (telha + argamassa)" GroupName="TipoLaje" Checked="RadioTipo_Checked" Margin="0,0,16,0" />
+                    <RadioButton x:Name="RadioTipoSeca" Content="Seca (piso seco)" GroupName="TipoLaje" Checked="RadioTipo_Checked" />
                 </StackPanel>
 
-                <TextBlock Text="Perfil (Steel Frame):" FontWeight="Bold" Margin="0,4,0,4"/>
-                <TextBlock Text="Largura do perfil (alma):" Margin="0,2,0,4"/>
+                <TextBlock Text="Perfil (Steel Frame):" FontWeight="Bold" Margin="0,4,0,4" />
+                <TextBlock Text="Largura do perfil (alma):" Margin="0,2,0,4" />
                 <StackPanel x:Name="PanelLarguraSteelFrame" Orientation="Horizontal" Margin="0,0,0,4">
-                    <RadioButton x:Name="RadioLargura90SF" Content="90 mm" GroupName="LarguraSteelFrame" Margin="0,0,12,0"/>
-                    <RadioButton x:Name="RadioLargura140SF" Content="140 mm" GroupName="LarguraSteelFrame" Margin="0,0,12,0"/>
-                    <RadioButton x:Name="RadioLargura200SF" Content="200 mm" GroupName="LarguraSteelFrame"/>
+                    <RadioButton x:Name="RadioLargura90SF" Content="90 mm" GroupName="LarguraSteelFrame" Margin="0,0,12,0" />
+                    <RadioButton x:Name="RadioLargura140SF" Content="140 mm" GroupName="LarguraSteelFrame" Margin="0,0,12,0" />
+                    <RadioButton x:Name="RadioLargura200SF" Content="200 mm" GroupName="LarguraSteelFrame" />
                 </StackPanel>
 
                 <StackPanel x:Name="PanelBitola" Orientation="Horizontal" Margin="0,0,0,8">
-                    <TextBlock Text="Bitola:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <RadioButton x:Name="RadioBitola095" Content="0,95 mm" GroupName="Bitola" Margin="0,0,12,0"/>
-                    <RadioButton x:Name="RadioBitola125" Content="1,25 mm" GroupName="Bitola"/>
+                    <TextBlock Text="Bitola:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <RadioButton x:Name="RadioBitola095" Content="0,95 mm" GroupName="Bitola" Margin="0,0,12,0" />
+                    <RadioButton x:Name="RadioBitola125" Content="1,25 mm" GroupName="Bitola" />
                 </StackPanel>
 
-                <TextBlock Text="Tipo de viga:" FontWeight="Bold" Margin="0,4,0,4"/>
-                <ComboBox x:Name="ComboTipoViga" Margin="0,0,0,8" SelectionChanged="ComboTipoViga_SelectionChanged"/>
+                <TextBlock Text="Tipo de viga:" FontWeight="Bold" Margin="0,4,0,4" />
+                <ComboBox x:Name="ComboTipoViga" Margin="0,0,0,8" SelectionChanged="ComboTipoViga_SelectionChanged" />
 
                 <StackPanel x:Name="PanelTrelica" Margin="0,0,0,8">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                        <TextBlock Text="Tipo de trelica:" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <ComboBox x:Name="ComboTrelicaTipo" Width="170"
-                                  SelectionChanged="ComboTrelicaTipo_SelectionChanged"/>
-                        <Border BorderBrush="#FFB0B0B0" BorderThickness="1" Background="White"
-                                Width="150" Height="64" Margin="8,0,0,0"
-                                HorizontalAlignment="Left" VerticalAlignment="Center">
-                            <Canvas x:Name="CanvasTrelica" Width="148" Height="62"/>
+                        <TextBlock Text="Tipo de trelica:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <ComboBox x:Name="ComboTrelicaTipo" Width="170" SelectionChanged="ComboTrelicaTipo_SelectionChanged" />
+                        <Border BorderBrush="#FFB0B0B0" BorderThickness="1" Background="White" Width="150" Height="64" Margin="8,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center">
+                            <Canvas x:Name="CanvasTrelica" Width="148" Height="62" />
                         </Border>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                        <TextBlock Text="Altura entre banzos (mm):" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBox x:Name="TextAlturaTrelica" Width="70"/>
+                        <TextBlock Text="Altura entre banzos (mm):" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <TextBox x:Name="TextAlturaTrelica" Width="70" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                        <TextBlock Text="Paineis (vazio = automatico):" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBox x:Name="TextPaineisTrelica" Width="60"/>
+                        <TextBlock Text="Paineis (vazio = automatico):" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <TextBox x:Name="TextPaineisTrelica" Width="60" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                        <TextBlock Text="Montagem:" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <ComboBox x:Name="ComboMontagemTrelica" Width="170"/>
+                        <TextBlock Text="Montagem:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <ComboBox x:Name="ComboMontagemTrelica" Width="170" />
                     </StackPanel>
-                    <CheckBox x:Name="CheckGussetPlacas" Content="Gerar chapas gusset nas juntas da trelica" Margin="0,2,0,0"/>
-                    <CheckBox x:Name="CheckFitasTensionadas" Margin="0,2,0,0"
-                              Content="Fitas tensionadas de travamento entre trelicas (disposicao provisoria)"
-                              Checked="CheckFitasTensionadas_Changed" Unchecked="CheckFitasTensionadas_Changed"/>
-                    <StackPanel x:Name="PanelFitas" Orientation="Horizontal" Margin="0,2,0,0" Visibility="Collapsed">
-                        <TextBlock Text="Passo das fitas (mm):" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBox x:Name="TextEspacamentoFitas" Width="70"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <TextBlock Text="Secao dos banzos:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <ComboBox x:Name="ComboSecaoBanzo" Width="170" />
                     </StackPanel>
-                </StackPanel>
+                    <CheckBox x:Name="CheckGussetPlacas" Content="Gerar chapas gusset nas juntas da trelica" Margin="0,2,0,0" />
+
+
+                </StackPanel><StackPanel Orientation="Vertical" Margin="0,0,0,8"><CheckBox x:Name="CheckFitasTensionadas" Margin="0,2,0,0" Content="Fitas tensionadas de travamento entre trelicas (disposicao provisoria)" Checked="CheckFitasTensionadas_Changed" Unchecked="CheckFitasTensionadas_Changed" /><StackPanel x:Name="PanelFitas" Orientation="Horizontal" Margin="0,2,0,0" Visibility="Collapsed">
+                        <TextBlock Text="Passo das fitas (mm):" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <TextBox x:Name="TextEspacamentoFitas" Width="70" />
+                    </StackPanel></StackPanel>
 
                 <StackPanel x:Name="PanelCaixao" Margin="0,0,0,8" Visibility="Collapsed">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Configuracao do caixao:" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <ComboBox x:Name="ComboComposicaoCaixao" Width="200"/>
+                        <TextBlock Text="Configuracao do caixao:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <ComboBox x:Name="ComboComposicaoCaixao" Width="200" />
                     </StackPanel>
                 </StackPanel>
 
                 <StackPanel x:Name="PanelFixadores" Margin="0,0,0,8">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                        <TextBlock Text="Fixadores (parafusos):" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <ComboBox x:Name="ComboFixadores" Width="150" SelectionChanged="ComboFixadores_SelectionChanged"/>
+                        <TextBlock Text="Fixadores (parafusos):" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <ComboBox x:Name="ComboFixadores" Width="150" SelectionChanged="ComboFixadores_SelectionChanged" />
                     </StackPanel>
                     <StackPanel x:Name="PanelEspacamentoFixadores" Orientation="Horizontal" Margin="0,0,0,4">
-                        <TextBlock Text="Espacamento dos fixadores de placa (mm):" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBox x:Name="TextEspacamentoFixadores" Width="70"/>
+                        <TextBlock Text="Espacamento dos fixadores de placa (mm):" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <TextBox x:Name="TextEspacamentoFixadores" Width="70" />
                     </StackPanel>
                 </StackPanel>
 
                 <StackPanel x:Name="PanelTelha" Orientation="Horizontal" Margin="0,0,0,8">
-                    <TextBlock Text="Espessura da telha (mm):" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <ComboBox x:Name="ComboTelha" Width="80"/>
+                    <TextBlock Text="Espessura da telha (mm):" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <ComboBox x:Name="ComboTelha" Width="80" />
                 </StackPanel>
 
                 <StackPanel x:Name="PanelPreencherOndas" Margin="0,0,0,8">
-                    <CheckBox x:Name="CheckPreencherOndas" Content="Preencher as ondas da telha com argamassa"/>
+                    <CheckBox x:Name="CheckPreencherOndas" Content="Preencher as ondas da telha com argamassa" />
                 </StackPanel>
 
                 <StackPanel x:Name="PanelComposicao" Margin="0,0,0,8">
-                    <TextBlock Text="Composicao de placas (laje seca):" FontWeight="Bold" Margin="0,0,0,4"/>
-                    <ComboBox x:Name="ComboComposicao" Margin="0,0,0,4" SelectionChanged="ComboComposicao_SelectionChanged"/>
-                    <TextBlock Text="As placas sao sempre paginadas (juntas de 3 mm)."
-                               Foreground="#FF606060" Margin="0,0,0,4" TextWrapping="Wrap"/>
+                    <TextBlock Text="Composicao de placas (laje seca):" FontWeight="Bold" Margin="0,0,0,4" />
+                    <ComboBox x:Name="ComboComposicao" Margin="0,0,0,4" SelectionChanged="ComboComposicao_SelectionChanged" />
+                    <TextBlock Text="As placas sao sempre paginadas (juntas de 3 mm)." Foreground="#FF606060" Margin="0,0,0,4" TextWrapping="Wrap" />
                     <StackPanel x:Name="PanelOSB" Orientation="Horizontal" Margin="0,0,0,4">
-                        <TextBlock Text="OSB (mm):" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <ComboBox x:Name="ComboOSB" Width="80"/>
+                        <TextBlock Text="OSB (mm):" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <ComboBox x:Name="ComboOSB" Width="80" />
                     </StackPanel>
                     <StackPanel x:Name="PanelCimenticia" Orientation="Horizontal" Margin="0,0,0,4">
-                        <TextBlock Text="Cimenticia (mm):" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <ComboBox x:Name="ComboCimenticia" Width="80"/>
+                        <TextBlock Text="Cimenticia (mm):" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <ComboBox x:Name="ComboCimenticia" Width="80" />
                     </StackPanel>
                 </StackPanel>
 
-                <TextBlock Text="Orientacao das vigas:" FontWeight="Bold" Margin="0,0,0,4"/>
-                <ComboBox x:Name="ComboOrientacao" Margin="0,0,0,4" SelectionChanged="ComboOrientacao_SelectionChanged"/>
+                <TextBlock Text="Orientacao das vigas:" FontWeight="Bold" Margin="0,0,0,4" />
+                <ComboBox x:Name="ComboOrientacao" Margin="0,0,0,4" SelectionChanged="ComboOrientacao_SelectionChanged" />
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                    <CheckBox x:Name="CheckPerpendicular" Content="Perpendicular à borda de referência" VerticalAlignment="Center" Checked="CheckPerpendicular_Checked" Unchecked="CheckPerpendicular_Checked"/>
+                    <CheckBox x:Name="CheckPerpendicular" Content="Perpendicular à borda de referência" VerticalAlignment="Center" Checked="CheckPerpendicular_Checked" Unchecked="CheckPerpendicular_Checked" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <TextBlock x:Name="LabelAresta" Text="Borda de referencia (indice):" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBox x:Name="TextAresta" Width="50" Margin="0,0,16,0"/>
-                    <TextBlock x:Name="LabelGraus" Text="Angulo (graus):" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBox x:Name="TextGraus" Width="60"/>
+                    <TextBlock x:Name="LabelAresta" Text="Borda de referencia (indice):" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBox x:Name="TextAresta" Width="50" Margin="0,0,16,0" />
+                    <TextBlock x:Name="LabelGraus" Text="Angulo (graus):" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBox x:Name="TextGraus" Width="60" />
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <TextBlock Text="Espacamento (mm):" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBox x:Name="TextEspacamento" Width="70" Margin="0,0,16,0"/>
-                    <TextBlock Text="Cota do topo (mm):" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBox x:Name="TextCota" Width="90"/>
+                    <TextBlock Text="Espacamento (mm):" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBox x:Name="TextEspacamento" Width="70" Margin="0,0,16,0" />
+                    <TextBlock Text="Cota do topo (mm):" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBox x:Name="TextCota" Width="90" />
                 </StackPanel>
 
-                <TextBlock Text="Previa (calculo sem gerar):" FontWeight="Bold" Margin="0,4,0,4"/>
-                <TextBox x:Name="TextPrevia" Height="140" IsReadOnly="True" AcceptsReturn="True"
-                         VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" FontFamily="Consolas"/>
+                <TextBlock Text="Previa (calculo sem gerar):" FontWeight="Bold" Margin="0,4,0,4" />
+                <TextBox x:Name="TextPrevia" Height="140" IsReadOnly="True" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" FontFamily="Consolas" />
 
             </StackPanel>
         </ScrollViewer>

@@ -20,7 +20,8 @@ namespace LSFRevitPlugin.Domain.Laje
     ///  - vao final maior que o espacamento (+1 mm) gera aviso;
     ///  - guia de borda em cada aresta perpendicular as vigas (onde elas terminam);
     ///  - v1: so contorno ortogonal (arestas paralelas ou perpendiculares as vigas, tolerancia 1 mm).
-    /// As vigas de borda ficam com o EIXO sobre o contorno; o recuo da meia aba e da geometria.
+    /// As vigas de borda ficam com o EIXO sobre o contorno; o recuo da meia largura e da geometria.
+    /// Com largura fisica informada, os segmentos sao limitados a pegada do perfil no contorno.
     /// </summary>
     public static class LayoutVigas
     {
@@ -30,6 +31,29 @@ namespace LSFRevitPlugin.Domain.Laje
         // Deslocamento (mm) da linha de varredura para fora da propria posicao da viga, para
         // nao cair exatamente sobre vertices ou arestas do contorno.
         private const double DeslocamentoVarreduraMm = 0.01;
+
+        /// <summary>
+        /// Posicao transversal efetiva do eixo fisico da viga. Com largura positiva, recua a viga
+        /// para dentro dos limites do contorno quando a pegada do perfil ultrapassaria vMin/vMax.
+        /// Sem largura, devolve a posicao original.
+        /// </summary>
+        public static double PosicaoFisicaTransversalMm(
+            OrientacaoVigas orientacao, double posicaoEixoMm, double larguraVigaMm)
+        {
+            if (orientacao == null) throw new ArgumentNullException(nameof(orientacao));
+            if (double.IsNaN(larguraVigaMm) || double.IsInfinity(larguraVigaMm) || larguraVigaMm <= 0.0)
+                return posicaoEixoMm;
+
+            double meiaLargura = larguraVigaMm / 2.0;
+            double minimo = orientacao.VMinMm + meiaLargura;
+            double maximo = orientacao.VMaxMm - meiaLargura;
+
+            if (minimo > maximo)
+                return (orientacao.VMinMm + orientacao.VMaxMm) / 2.0;
+            if (posicaoEixoMm < minimo) return minimo;
+            if (posicaoEixoMm > maximo) return maximo;
+            return posicaoEixoMm;
+        }
 
         private struct PosicaoViga
         {
@@ -42,8 +66,9 @@ namespace LSFRevitPlugin.Domain.Laje
         /// <param name="posicoesApoioMm">Posicoes v (mm) dos apoios (montantes); nulo = sem alinhamento.</param>
         /// <param name="toleranciaAlinhamentoMm">Distancia maxima (mm) para alinhar uma viga interna a um apoio;
         /// 0 = nao alinha; negativo, NaN ou infinito = erro.</param>
-        /// <param name="larguraVigaMm">Largura da viga transversal as vigas (aba); se maior que zero, avisa
-        /// quando duas vigas ficam mais proximas que isso. 0 = sem este aviso; negativo, NaN ou infinito = erro.</param>
+        /// <param name="larguraVigaMm">Largura fisica transversal da viga (mm). Se maior que zero, os
+        /// segmentos sao limitados a pegada fisica do perfil e avisa quando duas vigas ficam mais
+        /// proximas que isso. 0 = segmentos pelo eixo e sem este aviso; negativo, NaN ou infinito = erro.</param>
         public static ResultadoLayoutVigas Calcular(
             ContornoLaje contorno,
             OrientacaoVigas orientacao,
@@ -171,7 +196,16 @@ namespace LSFRevitPlugin.Domain.Laje
             // 2. Segmentos de cada viga.
             foreach (PosicaoViga item in unicos)
             {
-                List<SegmentoViga> segmentos = SegmentosDaViga(us, vs, item.Posicao);
+                List<SegmentoViga> segmentos;
+                if (larguraVigaMm > 0.0)
+                {
+                    double posicaoFisica = PosicaoFisicaTransversalMm(orientacao, item.Posicao, larguraVigaMm);
+                    segmentos = SegmentosFisicosDaViga(us, vs, posicaoFisica, larguraVigaMm);
+                }
+                else
+                {
+                    segmentos = SegmentosDaViga(us, vs, item.Posicao);
+                }
                 if (segmentos.Count == 0)
                 {
                     string tipo = item.Borda ? "Viga de borda" : "Viga";
@@ -419,6 +453,114 @@ namespace LSFRevitPlugin.Domain.Laje
             var intervalos = new List<double[]>();
             AdicionarIntervalos(us, vs, posicaoV - DeslocamentoVarreduraMm, intervalos);
             AdicionarIntervalos(us, vs, posicaoV + DeslocamentoVarreduraMm, intervalos);
+            return IntervalosParaSegmentos(intervalos);
+        }
+
+        /// <summary>
+        /// Segmentos em que toda a pegada fisica da viga (v central +/- meia largura) esta dentro
+        /// do contorno. Amostra as faixas de v separadas pelas arestas horizontais e intersecta os
+        /// intervalos de u, de modo que degraus/entalhes nao sejam cobertos pela largura do perfil.
+        /// </summary>
+        private static List<SegmentoViga> SegmentosFisicosDaViga(
+            double[] us, double[] vs, double posicaoFisicaV, double larguraVigaMm)
+        {
+            double meiaLargura = larguraVigaMm / 2.0;
+            double vBaixo = posicaoFisicaV - meiaLargura;
+            double vAlto = posicaoFisicaV + meiaLargura;
+            if (vAlto - vBaixo <= 1e-9) return new List<SegmentoViga>();
+
+            List<double> amostras = AmostrasFisicas(vs, vBaixo, vAlto);
+            List<double[]> acumulado = null;
+
+            foreach (double vAmostra in amostras)
+            {
+                var intervalos = new List<double[]>();
+                AdicionarIntervalos(us, vs, vAmostra, intervalos);
+                if (intervalos.Count == 0) return new List<SegmentoViga>();
+
+                acumulado = acumulado == null
+                    ? intervalos
+                    : IntersectarIntervalos(acumulado, intervalos);
+
+                if (acumulado.Count == 0) return new List<SegmentoViga>();
+            }
+
+            return acumulado == null ? new List<SegmentoViga>() : IntervalosParaSegmentos(acumulado);
+        }
+
+        private static List<double> AmostrasFisicas(double[] vs, double vBaixo, double vAlto)
+        {
+            double altura = vAlto - vBaixo;
+            double epsilon = Math.Min(DeslocamentoVarreduraMm, altura / 4.0);
+            var criticos = new List<double> { vBaixo, vAlto };
+
+            foreach (double v in vs)
+            {
+                if (v > vBaixo + epsilon && v < vAlto - epsilon) criticos.Add(v);
+            }
+
+            criticos.Sort();
+            var criticosUnicos = new List<double>();
+            foreach (double v in criticos)
+            {
+                if (criticosUnicos.Count == 0 || Math.Abs(v - criticosUnicos[criticosUnicos.Count - 1]) > 1e-9)
+                    criticosUnicos.Add(v);
+            }
+
+            var amostras = new List<double>();
+            for (int i = 0; i < criticosUnicos.Count; i++)
+            {
+                if (i == 0) amostras.Add(criticosUnicos[i] + epsilon);
+                else if (i == criticosUnicos.Count - 1) amostras.Add(criticosUnicos[i] - epsilon);
+                else
+                {
+                    amostras.Add(criticosUnicos[i] - epsilon);
+                    amostras.Add(criticosUnicos[i] + epsilon);
+                }
+
+                if (i + 1 < criticosUnicos.Count)
+                    amostras.Add((criticosUnicos[i] + criticosUnicos[i + 1]) / 2.0);
+            }
+
+            amostras.Sort();
+
+            var unicas = new List<double>();
+            foreach (double amostra in amostras)
+            {
+                if (amostra < vBaixo || amostra > vAlto) continue;
+                if (unicas.Count == 0 || Math.Abs(amostra - unicas[unicas.Count - 1]) > 1e-9)
+                    unicas.Add(amostra);
+            }
+
+            return unicas;
+        }
+
+        private static List<double[]> IntersectarIntervalos(List<double[]> a, List<double[]> b)
+        {
+            var resultado = new List<double[]>();
+            int i = 0;
+            int j = 0;
+
+            while (i < a.Count && j < b.Count)
+            {
+                double inicio = Math.Max(a[i][0], b[j][0]);
+                double fim = Math.Min(a[i][1], b[j][1]);
+                if (fim - inicio > ToleranciaMm) resultado.Add(new[] { inicio, fim });
+
+                if (Math.Abs(a[i][1] - b[j][1]) <= 1e-9)
+                {
+                    i++;
+                    j++;
+                }
+                else if (a[i][1] < b[j][1]) i++;
+                else j++;
+            }
+
+            return resultado;
+        }
+
+        private static List<SegmentoViga> IntervalosParaSegmentos(List<double[]> intervalos)
+        {
             intervalos.Sort((x, y) => x[0].CompareTo(y[0]));
 
             var segmentos = new List<SegmentoViga>();

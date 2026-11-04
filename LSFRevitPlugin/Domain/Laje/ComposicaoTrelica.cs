@@ -202,6 +202,75 @@ namespace LSFRevitPlugin.Domain.Laje
             return membros;
         }
 
+        /// <summary>
+        /// Calcula o envelope vertical fisico da trelica, incluindo a projecao
+        /// das secoes transversais de banzos, diagonais e montantes.
+        /// </summary>
+        public static (double TopoMm, double BaseMm) CalcularEnvelopeVertical(
+            TrelicaTipo tipo,
+            double vaoMm,
+            double alturaMm,
+            int numeroPaineis,
+            MontagemTrelica montagem,
+            double abaMm,
+            double larguraAlmaMm)
+        {
+            if (double.IsNaN(abaMm) || double.IsInfinity(abaMm) || abaMm <= 0.0)
+                throw new ArgumentOutOfRangeException(nameof(abaMm));
+
+            if (double.IsNaN(larguraAlmaMm) ||
+                double.IsInfinity(larguraAlmaMm) || larguraAlmaMm <= 0.0)
+                throw new ArgumentOutOfRangeException(nameof(larguraAlmaMm));
+
+            List<MembroTrelica> membros =
+                Membros(tipo, vaoMm, alturaMm, numeroPaineis);
+
+            double topo = double.NegativeInfinity;
+            double basez = double.PositiveInfinity;
+
+            foreach (MembroTrelica membro in membros)
+            {
+                double du = membro.FimUMm - membro.InicioUMm;
+                double dz = membro.FimZMm - membro.InicioZMm;
+                double comprimento = Math.Sqrt(du * du + dz * dz);
+
+                if (comprimento <= 1e-9)
+                    continue;
+
+                bool banzo =
+                    membro.Tipo == MembroTrelicaTipo.BanzoSuperior ||
+                    membro.Tipo == MembroTrelicaTipo.BanzoInferior;
+
+                double projecaoVertical;
+
+                if (banzo && montagem == MontagemTrelica.Encaixada)
+                {
+                    projecaoVertical = abaMm / 2.0;
+                }
+                else
+                {
+                    projecaoVertical =
+                        Math.Abs(du / comprimento) * larguraAlmaMm / 2.0;
+                }
+
+                double zMin =
+                    Math.Min(membro.InicioZMm, membro.FimZMm)
+                    - projecaoVertical;
+
+                double zMax =
+                    Math.Max(membro.InicioZMm, membro.FimZMm)
+                    + projecaoVertical;
+
+                topo = Math.Max(topo, zMax);
+                basez = Math.Min(basez, zMin);
+            }
+
+            if (double.IsInfinity(topo) || double.IsInfinity(basez))
+                throw new InvalidOperationException(
+                    "Nao foi possivel calcular o envelope vertical da trelica.");
+
+            return (topo, basez);
+        }
         private static void AdicionarMontantes(
             List<MembroTrelica> membros, Func<int, double> u, int n, double basez, double topo)
         {

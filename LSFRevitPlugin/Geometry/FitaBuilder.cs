@@ -7,23 +7,22 @@ namespace LSFRevitPlugin.Geometry
 {
     /// <summary>
     /// Geometria 3D das fitas tensionadas de travamento: placas finas horizontais que correm
-    /// transversalmente as trelicas (ao longo de v), na cota do banzo superior. A largura (ao
-    /// longo de u) e a espessura sao GEOMETRICAS DE PARTIDA, nao normativas.
+    /// transversalmente as vigas (ao longo de v), ASSENTADAS na FACE INFERIOR da estrutura de
+    /// vigamento -- face inferior do banzo inferior da trelica ou face inferior da viga
+    /// convencional (perfil simples, composta ou caixao). A fita fica logo ABAIXO da face
+    /// informada, sem embutir na secao, sem atravessar o perfil e sem subir para o topo. A
+    /// largura (ao longo de u) e a espessura sao GEOMETRICAS DE PARTIDA, nao normativas
+    /// (ver <see cref="FitasTensionadasLaje"/>).
     /// </summary>
     public static class FitaBuilder
     {
-        /// <summary>Largura da fita ao longo do vao (mm) -- geometrica de partida.</summary>
-        public const double LarguraFitaMm = 30.0;
-
-        /// <summary>Espessura da fita (mm) -- geometrica de partida.</summary>
-        public const double EspessuraFitaMm = 1.0;
-
         public static Solid CriarSolidoFita(
-            FitaTensionada fita, OrientacaoVigas orientacao, double zBaseMm, ElementId materialId = null)
+            FitaTensionada fita, OrientacaoVigas orientacao,
+            double zFaceInferiorEstruturaMm, ElementId materialId = null)
         {
             if (fita == null || orientacao == null) return null;
 
-            double meia = LarguraFitaMm / 2.0;
+            double meia = FitasTensionadasLaje.LarguraMm / 2.0;
             var pontos = new List<Ponto2DMm>
             {
                 orientacao.ParaMundo(fita.UMm - meia, fita.VInicioMm),
@@ -32,7 +31,9 @@ namespace LSFRevitPlugin.Geometry
                 orientacao.ParaMundo(fita.UMm - meia, fita.VFimMm)
             };
 
-            return LajeVigaBuilder.CriarSolidoPlaca(pontos, zBaseMm, EspessuraFitaMm, materialId);
+            double baseFitaMm = FitasTensionadasLaje.BaseNaFaceInferiorMm(zFaceInferiorEstruturaMm);
+            return LajeVigaBuilder.CriarSolidoPlaca(
+                pontos, baseFitaMm, FitasTensionadasLaje.EspessuraMm, materialId);
         }
     }
 }

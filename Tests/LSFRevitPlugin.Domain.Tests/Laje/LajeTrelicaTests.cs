@@ -203,6 +203,62 @@ namespace LSFRevitPlugin.Domain.Tests.Laje
             Assert.Equal(perfil.LarguraAlmaMm, p.AlturaVigaEfetivaMm(), 6);
         }
 
+        // ---------- Envelope fisico da trelica ----------
+
+        [Theory]
+        [InlineData(TrelicaTipo.Warren, MontagemTrelica.Encaixada)]
+        [InlineData(TrelicaTipo.Warren, MontagemTrelica.FaceComFace)]
+        [InlineData(TrelicaTipo.Pratt, MontagemTrelica.Encaixada)]
+        [InlineData(TrelicaTipo.Pratt, MontagemTrelica.FaceComFace)]
+        [InlineData(TrelicaTipo.Howe, MontagemTrelica.Encaixada)]
+        [InlineData(TrelicaTipo.Howe, MontagemTrelica.FaceComFace)]
+        [InlineData(TrelicaTipo.DiagonaisAlternadas, MontagemTrelica.Encaixada)]
+        [InlineData(TrelicaTipo.DiagonaisAlternadas, MontagemTrelica.FaceComFace)]
+        [InlineData(TrelicaTipo.MontantesVerticais, MontagemTrelica.Encaixada)]
+        [InlineData(TrelicaTipo.MontantesVerticais, MontagemTrelica.FaceComFace)]
+        public void Envelope_fisico_e_simetrico_e_maior_que_altura_entre_eixos(
+            TrelicaTipo tipo, MontagemTrelica montagem)
+        {
+            const double alturaEntreEixos = 300.0;
+
+            var envelope = ComposicaoTrelica.CalcularEnvelopeVertical(
+                tipo, 6000.0, alturaEntreEixos, 10, montagem, 40.0, 90.0);
+
+            double alturaFisica = envelope.TopoMm - envelope.BaseMm;
+            double centro = (envelope.TopoMm + envelope.BaseMm) / 2.0;
+
+            Assert.True(envelope.TopoMm > alturaEntreEixos / 2.0);
+            Assert.True(envelope.BaseMm < -alturaEntreEixos / 2.0);
+            Assert.True(alturaFisica > alturaEntreEixos);
+            Assert.Equal(0.0, centro, 6);
+        }
+
+        [Theory]
+        [InlineData(MontagemTrelica.Encaixada, 20.0)]
+        [InlineData(MontagemTrelica.FaceComFace, 45.0)]
+        public void Envelope_considera_projecao_vertical_dos_banzos(
+            MontagemTrelica montagem, double projecaoMinima)
+        {
+            var envelope = ComposicaoTrelica.CalcularEnvelopeVertical(
+                TrelicaTipo.Warren, 6000.0, 300.0, 10, montagem, 40.0, 90.0);
+
+            Assert.True(envelope.TopoMm >= 150.0 + projecaoMinima - 1e-6);
+            Assert.True(envelope.BaseMm <= -150.0 - projecaoMinima + 1e-6);
+        }
+
+        [Fact]
+        public void Envelope_rejeita_dimensoes_de_secao_invalidas()
+        {
+            Assert.Throws<System.ArgumentOutOfRangeException>(() =>
+                ComposicaoTrelica.CalcularEnvelopeVertical(
+                    TrelicaTipo.Warren, 6000.0, 300.0, 10,
+                    MontagemTrelica.Encaixada, 0.0, 90.0));
+
+            Assert.Throws<System.ArgumentOutOfRangeException>(() =>
+                ComposicaoTrelica.CalcularEnvelopeVertical(
+                    TrelicaTipo.Warren, 6000.0, 300.0, 10,
+                    MontagemTrelica.Encaixada, 40.0, double.NaN));
+        }
         // ---------- Persistencia ----------
 
         [Fact]

@@ -489,5 +489,99 @@ namespace LSFRevitPlugin.Domain.Tests.Laje
                 }
             }
         }
+
+        // ---------- Largura fisica e limite perimetral ----------
+
+        [Fact]
+        public void Retangulo_com_largura_fisica_preserva_posicoes_e_extensao_total()
+        {
+            var contorno = new ContornoLaje(Retangulo(6000, 4000));
+            OrientacaoVigas o = OrientacaoVigas.Calcular(contorno, null);
+
+            ResultadoLayoutVigas r = LayoutVigas.Calcular(contorno, o, 400.0, null, 0.0, 90.0);
+
+            Assert.True(r.EhValido);
+            Assert.Equal(16, r.Vigas.Count);
+            Assert.Equal(o.VMinMm, r.Vigas[0].PosicaoTransversalMm, 6);
+            Assert.Equal(o.VMaxMm, r.Vigas[15].PosicaoTransversalMm, 6);
+            Assert.All(r.Vigas, viga =>
+            {
+                Assert.Single(viga.Segmentos);
+                Assert.Equal(o.UMinMm, viga.Segmentos[0].InicioUMm, 6);
+                Assert.Equal(o.UMaxMm, viga.Segmentos[0].FimUMm, 6);
+            });
+        }
+
+        [Fact]
+        public void Viga_no_degrau_da_forma_em_U_e_recortada_pela_largura_fisica()
+        {
+            var contorno = new ContornoLaje(FormaEmU());
+            OrientacaoVigas o = OrientacaoVigas.Calcular(contorno, 0.0);
+
+            ResultadoLayoutVigas r = LayoutVigas.Calcular(contorno, o, 1000.0, null, 0.0, 90.0);
+
+            VigaLaje viga = r.Vigas.Single(v => Math.Abs(v.PosicaoTransversalMm - 1000.0) < 1e-6);
+            Assert.Equal(2, viga.Segmentos.Count);
+            Assert.Equal(2000.0, viga.Segmentos[0].FimUMm, 6);
+            Assert.Equal(4000.0, viga.Segmentos[1].InicioUMm, 6);
+        }
+
+        [Fact]
+        public void Pegada_fisica_fica_dentro_do_contorno_em_retangulo_L_e_U()
+        {
+            AssertPegadaDentroDoContorno(Retangulo(6000, 4000), null, 400.0, 90.0);
+            AssertPegadaDentroDoContorno(FormaEmL(), null, 400.0, 90.0);
+            AssertPegadaDentroDoContorno(FormaEmU(), 0.0, 1000.0, 90.0);
+        }
+
+        [Fact]
+        public void Posicao_fisica_recua_bordas_e_vigas_proximas_para_dentro()
+        {
+            var contorno = new ContornoLaje(Retangulo(6000, 4000));
+            OrientacaoVigas o = OrientacaoVigas.Calcular(contorno, null);
+
+            Assert.Equal(o.VMinMm + 45.0,
+                LayoutVigas.PosicaoFisicaTransversalMm(o, o.VMinMm, 90.0), 6);
+            Assert.Equal(o.VMaxMm - 45.0,
+                LayoutVigas.PosicaoFisicaTransversalMm(o, o.VMaxMm, 90.0), 6);
+            Assert.Equal(o.VMinMm + 45.0,
+                LayoutVigas.PosicaoFisicaTransversalMm(o, o.VMinMm + 20.0, 90.0), 6);
+            Assert.Equal(o.VMinMm + 400.0,
+                LayoutVigas.PosicaoFisicaTransversalMm(o, o.VMinMm + 400.0, 90.0), 6);
+            Assert.Equal(o.VMinMm,
+                LayoutVigas.PosicaoFisicaTransversalMm(o, o.VMinMm, 0.0), 6);
+        }
+
+        private static void AssertPegadaDentroDoContorno(
+            Ponto2DMm[] pontos, double? direcao, double espacamentoMm, double larguraVigaMm)
+        {
+            var contorno = new ContornoLaje(pontos);
+            OrientacaoVigas o = OrientacaoVigas.Calcular(contorno, direcao);
+            ResultadoLayoutVigas r = LayoutVigas.Calcular(
+                contorno, o, espacamentoMm, null, 0.0, larguraVigaMm);
+
+            Assert.True(r.EhValido);
+            double meiaLargura = larguraVigaMm / 2.0;
+
+            foreach (VigaLaje viga in r.Vigas)
+            {
+                double vFisico = LayoutVigas.PosicaoFisicaTransversalMm(
+                    o, viga.PosicaoTransversalMm, larguraVigaMm);
+
+                foreach (SegmentoViga segmento in viga.Segmentos)
+                {
+                    foreach (double u in new[] { segmento.InicioUMm, segmento.FimUMm })
+                    {
+                        foreach (double v in new[] { vFisico - meiaLargura, vFisico + meiaLargura })
+                        {
+                            Ponto2DMm p = o.ParaMundo(u, v);
+                            Assert.True(RecortePoligono.Contem(contorno.Pontos, p),
+                                $"Ponto ({p.XMm:F1}, {p.YMm:F1}) fora do contorno " +
+                                $"(viga v={viga.PosicaoTransversalMm:F1}, segmento {segmento.InicioUMm:F1}-{segmento.FimUMm:F1}).");
+                        }
+                    }
+                }
+            }
+        }
     }
 }

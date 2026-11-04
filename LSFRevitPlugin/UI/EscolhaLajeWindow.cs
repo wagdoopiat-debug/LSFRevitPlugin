@@ -38,9 +38,13 @@ namespace LSFRevitPlugin.UI
         /// <summary>Laje escolhida. So valida se DialogResult for true.</summary>
         public RegistroLaje Selecionado { get; private set; }
 
-        public EscolhaLajeWindow(IEnumerable<RegistroLaje> registros)
+        public EscolhaLajeWindow(
+            IEnumerable<RegistroLaje> registros,
+            string titulo = null,
+            string instrucao = null,
+            string rotuloBotao = null)
         {
-            Title = "LSF Modeler - Escolher laje";
+            Title = titulo ?? "LSF Modeler - Escolher laje";
             Width = 430;
             SizeToContent = SizeToContent.Height;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -49,7 +53,7 @@ namespace LSFRevitPlugin.UI
             var raiz = new StackPanel { Margin = new Thickness(16) };
             raiz.Children.Add(new TextBlock
             {
-                Text = "Escolha a laje para editar/regenerar:",
+                Text = instrucao ?? "Escolha a laje para editar/regenerar:",
                 FontWeight = FontWeights.Bold,
                 Margin = new Thickness(0, 0, 0, 8)
             });
@@ -74,7 +78,7 @@ namespace LSFRevitPlugin.UI
 
             var btnEditar = new Button
             {
-                Content = "Editar",
+                Content = rotuloBotao ?? "Editar",
                 Width = 80,
                 IsDefault = true,
                 Margin = new Thickness(0, 0, 8, 0)

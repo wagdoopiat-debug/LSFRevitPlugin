@@ -160,13 +160,17 @@ namespace LSFRevitPlugin.Domain.Laje
         /// da onda e argamassa (umida) ou camadas x espessura do piso (seca) vem do catalogo.
         /// A altura da alma e a LarguraAlmaMm do perfil (alma vertical na viga de piso).
         /// </summary>
-        public static CamadasLaje Calcular(ParametrosLaje parametros, CatalogoLaje catalogo)
+        public static CamadasLaje Calcular(
+            ParametrosLaje parametros,
+            CatalogoLaje catalogo,
+            double? alturaVigaOverrideMm = null)
         {
             if (parametros == null) throw new ArgumentNullException(nameof(parametros));
             if (catalogo == null) throw new ArgumentNullException(nameof(catalogo));
             if (parametros.Perfil == null) throw new ArgumentException("Perfil nao informado.", nameof(parametros));
 
-            double alma = parametros.AlturaVigaEfetivaMm();
+            double alma = alturaVigaOverrideMm ?? parametros.AlturaVigaEfetivaMm();
+            ExigirPositivo(alma, nameof(alturaVigaOverrideMm));
 
             if (parametros.Tipo == TipoLaje.Umida)
             {

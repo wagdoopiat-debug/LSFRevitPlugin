@@ -145,23 +145,15 @@ namespace LSFRevitPlugin.Domain.Tests.Laje
         }
 
         [Fact]
-        public void Osb_e_mais_largo_transversalmente_e_cimenticia_no_sentido_contrario()
+        public void Osb_e_cimenticia_usam_a_mesma_orientacao_sem_rotacao_relativa()
         {
             PaginacaoPlacas.DimensoesOrientadas(osb: true, out double osbU, out double osbV);
             PaginacaoPlacas.DimensoesOrientadas(osb: false, out double cimU, out double cimV);
 
-            // OSB: lado maior (2400) transversal as vigas (v) -> perpendicular.
+            Assert.Equal(osbU, cimU, 6);
+            Assert.Equal(osbV, cimV, 6);
             Assert.Equal(PaginacaoPlacas.LarguraOSBMm, osbU, 6);
             Assert.Equal(PaginacaoPlacas.ComprimentoOSBMm, osbV, 6);
-
-            // Cimenticia: lado maior (2400) ao longo da viga (u) -> paralela (rotacionada 90 graus).
-            Assert.Equal(PaginacaoPlacas.ComprimentoCimenticiaMm, cimU, 6);
-            Assert.Equal(PaginacaoPlacas.LarguraCimenticiaMm, cimV, 6);
-
-            // As duas orientacoes sao opostas entre si (dimensoes trocadas).
-            Assert.Equal(osbU, cimV, 6);
-            Assert.Equal(osbV, cimU, 6);
-            Assert.NotEqual(osbU, osbV);
         }
     }
 }

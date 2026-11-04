@@ -92,7 +92,16 @@ namespace LSFRevitPlugin.Services
                     larguraVigaMm: ComposicaoViga.LarguraTransversalMm(
                         parametros.TipoViga, parametros.Perfil, parametros.MontagemTrelica,
                         parametros.ComposicaoCaixao));
-                camadas = CamadasLaje.Calcular(parametros, CatalogoLaje.CriarPadrao());
+                double? alturaEnvelopeTrelicasMm = null;
+                if (parametros.TipoViga == TipoVigaLaje.Trelica)
+                {
+                    alturaEnvelopeTrelicasMm = CalcularAlturaEnvelopeTrelicas(parametros, layout);
+                }
+
+                camadas = CamadasLaje.Calcular(
+                    parametros,
+                    CatalogoLaje.CriarPadrao(),
+                    alturaEnvelopeTrelicasMm);
             }
             catch (Exception ex)
             {
@@ -191,6 +200,75 @@ namespace LSFRevitPlugin.Services
             return resultado;
         }
 
+        /// <summary>
+        /// Calcula a altura fisica maxima das trelicas dos segmentos reais da laje.
+        /// Inclui as trelicas longitudinais e os travamentos transversais.
+        /// </summary>
+        private static double CalcularAlturaEnvelopeTrelicas(
+            ParametrosLaje parametros,
+            ResultadoLayoutVigas layout)
+        {
+            if (parametros == null) throw new ArgumentNullException(nameof(parametros));
+            if (layout == null) throw new ArgumentNullException(nameof(layout));
+            if (parametros.Perfil == null) throw new ArgumentException("Perfil nao informado.", nameof(parametros));
+
+            double alturaMaxima = 0.0;
+
+            foreach (VigaLaje viga in layout.Vigas)
+            {
+                foreach (SegmentoViga segmento in viga.Segmentos)
+                {
+                    if (segmento.ComprimentoMm <= LayoutVigas.ToleranciaMm) continue;
+
+                    int paineis = parametros.NumeroPaineisTrelica
+                        ?? ComposicaoTrelica.NumeroPaineis(
+                            segmento.ComprimentoMm,
+                            parametros.PainelTrelicaAlvoMm);
+
+                    var envelope = ComposicaoTrelica.CalcularEnvelopeVertical(
+                        parametros.Trelica,
+                        segmento.ComprimentoMm,
+                        parametros.AlturaTrelicaMm,
+                        paineis,
+                        parametros.MontagemTrelica,
+                        parametros.Perfil.AbaMm,
+                        parametros.Perfil.LarguraAlmaMm);
+
+                    alturaMaxima = Math.Max(
+                        alturaMaxima,
+                        envelope.TopoMm - envelope.BaseMm);
+                }
+            }
+
+            foreach (GuiaBordaLaje guia in layout.GuiasBorda)
+            {
+                if (guia.ComprimentoMm <= LayoutVigas.ToleranciaMm) continue;
+
+                int paineis = parametros.NumeroPaineisTrelica
+                    ?? ComposicaoTrelica.NumeroPaineis(
+                        guia.ComprimentoMm,
+                        parametros.PainelTrelicaAlvoMm);
+
+                var envelope = ComposicaoTrelica.CalcularEnvelopeVertical(
+                    parametros.Trelica,
+                    guia.ComprimentoMm,
+                    parametros.AlturaTrelicaMm,
+                    paineis,
+                    MontagemTrelica.Encaixada,
+                    parametros.Perfil.AbaMm,
+                    parametros.Perfil.LarguraAlmaMm);
+
+                alturaMaxima = Math.Max(
+                    alturaMaxima,
+                    envelope.TopoMm - envelope.BaseMm);
+            }
+
+            if (alturaMaxima <= 0.0 || double.IsNaN(alturaMaxima) || double.IsInfinity(alturaMaxima))
+                throw new InvalidOperationException(
+                    "Nao foi possivel determinar a altura fisica das trelicas da laje.");
+
+            return alturaMaxima;
+        }
         private static void CriarVigas(
             Document doc,
             ParametrosLaje parametros,
@@ -202,10 +280,10 @@ namespace LSFRevitPlugin.Services
             int lajeId,
             ResultadoGeracaoLaje resultado)
         {
-            double meiaLargura = ComposicaoViga.LarguraTransversalMm(
+            double larguraTransversal = ComposicaoViga.LarguraTransversalMm(
                 parametros.TipoViga, parametros.Perfil, parametros.MontagemTrelica,
-                parametros.ComposicaoCaixao) / 2.0;
-            if (meiaLargura <= 0.0) meiaLargura = parametros.Perfil.AbaMm / 2.0;
+                parametros.ComposicaoCaixao);
+            if (larguraTransversal <= 0.0) larguraTransversal = parametros.Perfil.AbaMm;
             int numero = 0;
 
             foreach (VigaLaje viga in layout.Vigas)
@@ -215,9 +293,8 @@ namespace LSFRevitPlugin.Services
                 bool naBordaMin = Math.Abs(vMm - orientacao.VMinMm) <= LayoutVigas.ToleranciaMm;
                 bool naBordaMax = Math.Abs(vMm - orientacao.VMaxMm) <= LayoutVigas.ToleranciaMm;
 
-                double vEfetivoMm = vMm;
-                if (naBordaMin) vEfetivoMm = vMm + meiaLargura;
-                else if (naBordaMax) vEfetivoMm = vMm - meiaLargura;
+                double vEfetivoMm = LayoutVigas.PosicaoFisicaTransversalMm(
+                    orientacao, vMm, larguraTransversal);
 
                 foreach (SegmentoViga segmento in viga.Segmentos)
                 {
@@ -233,11 +310,14 @@ namespace LSFRevitPlugin.Services
                             ?? ComposicaoTrelica.NumeroPaineis(
                                 segmento.ComprimentoMm, parametros.PainelTrelicaAlvoMm);
 
-                        var normalPlano = new XYZ(orientacao.VX, orientacao.VY, 0.0);
+                        double sinalNormal = SecaoMembroTrelica.SinalNormalPlanoTransversal(
+                            parametros.MontagemTrelica, naBordaMin, naBordaMax);
+                        var normalPlano = new XYZ(
+                            orientacao.VX * sinalNormal, orientacao.VY * sinalNormal, 0.0);
                         solidos = TrelicaBuilder.CriarSolidosTrelica(
                             parametros.Perfil, parametros.Trelica, segmento.ComprimentoMm,
                             parametros.AlturaTrelicaMm, paineis, inicio, fim, normalPlano, materialViga,
-                            parametros.MontagemTrelica);
+                            parametros.MontagemTrelica, sinalNormal, parametros.SecaoBanzo);
 
                         if (parametros.GussetPlacas)
                         {
@@ -281,9 +361,9 @@ namespace LSFRevitPlugin.Services
 
         /// <summary>
         /// Cria o membro de borda em cada aresta perpendicular as vigas. Para vigas convencionais
-        /// e a guia "U" de borda; para vigas trelicadas e uma trelica transversal de travamento,
-        /// que recebe as pontas das trelicas nos DOIS apoios (ver TravamentoLaje). A guia "U" so e
-        /// usada quando a laje nao for de vigas trelicadas.
+        /// e a guia "U" de borda; para vigas trelicadas sao conjuntos de cinco pecas (quadrado +
+        /// diagonal) entre trelicas adjacentes nos DOIS apoios (ver TravamentoLaje). A guia "U" so
+        /// e usada quando a laje nao for de vigas trelicadas.
         /// </summary>
         private static void CriarBordas(
             Document doc,
@@ -299,6 +379,15 @@ namespace LSFRevitPlugin.Services
             ResultadoGeracaoLaje resultado)
         {
             TipoMembroBorda tipoMembro = TravamentoLaje.MembroDeBorda(parametros.TipoViga);
+
+            if (tipoMembro == TipoMembroBorda.TrelicaTravamento)
+            {
+                CriarTravamentosTrelica(
+                    doc, parametros, orientacao, layout, zCentroVigaMm,
+                    materialTravamento, lajeId, resultado);
+                return;
+            }
+
             double centroUMm = (orientacao.UMinMm + orientacao.UMaxMm) / 2.0;
             int numero = 0;
 
@@ -309,97 +398,98 @@ namespace LSFRevitPlugin.Services
                 XYZ inicio = PontoMundo(orientacao, guia.UMm, guia.VInicioMm, zCentroVigaMm);
                 XYZ fim = PontoMundo(orientacao, guia.UMm, guia.VFimMm, zCentroVigaMm);
 
-                if (tipoMembro == TipoMembroBorda.TrelicaTravamento)
+                double sinal = centroUMm >= guia.UMm ? 1.0 : -1.0;
+                XYZ paraDentro = new XYZ(orientacao.UX * sinal, orientacao.UY * sinal, 0.0);
+
+                Solid solido = LajeVigaBuilder.CriarSolidoGuiaBorda(
+                    parametros.Perfil, inicio, fim, paraDentro, materialGuiaBorda);
+                if (solido == null)
                 {
-                    CriarTravamentoTrelica(
-                        doc, parametros, orientacao, guia, inicio, fim, zCentroVigaMm,
-                        materialTravamento, materialGusset, lajeId, numero, resultado);
-                }
-                else
-                {
-                    double sinal = centroUMm >= guia.UMm ? 1.0 : -1.0;
-                    XYZ paraDentro = new XYZ(orientacao.UX * sinal, orientacao.UY * sinal, 0.0);
-
-                    Solid solido = LajeVigaBuilder.CriarSolidoGuiaBorda(
-                        parametros.Perfil, inicio, fim, paraDentro, materialGuiaBorda);
-                    if (solido == null)
-                    {
-                        resultado.Avisos.Add("Guia de borda nao gerada: segmento degenerado.");
-                        continue;
-                    }
-
-                    DirectShape ds = StudDirectShapeFactory.CriarElementoMontante(doc, solido, NomeGuiaBorda);
-                    if (ds == null)
-                    {
-                        resultado.Avisos.Add("Guia de borda nao gerada: falha ao criar o DirectShape.");
-                        continue;
-                    }
-
-                    GravarIdentidade(ds, lajeId, parametros.Tipo, PapelElementoLaje.GuiaBorda, numero);
-                    resultado.GuiasBordaCriadas++;
+                    resultado.Avisos.Add("Guia de borda nao gerada: segmento degenerado.");
+                    continue;
                 }
 
+                DirectShape ds = StudDirectShapeFactory.CriarElementoMontante(doc, solido, NomeGuiaBorda);
+                if (ds == null)
+                {
+                    resultado.Avisos.Add("Guia de borda nao gerada: falha ao criar o DirectShape.");
+                    continue;
+                }
+
+                GravarIdentidade(ds, lajeId, parametros.Tipo, PapelElementoLaje.GuiaBorda, numero);
+                resultado.GuiasBordaCriadas++;
                 numero++;
             }
         }
 
-        private static void CriarTravamentoTrelica(
+        /// <summary>
+        /// Um conjunto de cinco pecas (quadrado + diagonal) por par de trelicas adjacentes em cada
+        /// apoio. Cada interface recebe uma unica DirectShape, sem duplicar nas duas faces.
+        /// </summary>
+        private static void CriarTravamentosTrelica(
             Document doc,
             ParametrosLaje parametros,
             OrientacaoVigas orientacao,
-            GuiaBordaLaje guia,
-            XYZ inicio,
-            XYZ fim,
+            ResultadoLayoutVigas layout,
             double zCentroVigaMm,
             ElementId materialTravamento,
-            ElementId materialGusset,
             int lajeId,
-            int numero,
             ResultadoGeracaoLaje resultado)
         {
-            int paineis = parametros.NumeroPaineisTrelica
-                ?? ComposicaoTrelica.NumeroPaineis(guia.ComprimentoMm, parametros.PainelTrelicaAlvoMm);
+            double larguraTransversal = ComposicaoViga.LarguraTransversalMm(
+                parametros.TipoViga, parametros.Perfil, parametros.MontagemTrelica,
+                parametros.ComposicaoCaixao);
+            MontagemTrelica montagemTravamento =
+                TravamentoLaje.MontagemTravamentoApoio(parametros.MontagemTrelica);
 
-            var normalPlano = new XYZ(orientacao.UX, orientacao.UY, 0.0);
-            List<Solid> solidos = TrelicaBuilder.CriarSolidosTrelica(
-                parametros.Perfil, parametros.Trelica, guia.ComprimentoMm,
-                parametros.AlturaTrelicaMm, paineis, inicio, fim, normalPlano, materialTravamento,
-                parametros.MontagemTrelica);
+            List<(double UApoioMm, double VInicioLivreMm, double VFimLivreMm, List<MembroTrelica> Membros)>
+                conjuntos = TravamentoLaje.CalcularConjuntos(
+                    orientacao, layout, parametros.AlturaTrelicaMm, larguraTransversal,
+                    TravamentoLaje.RecuoMontanteParaDentroMm(
+                        montagemTravamento,
+                        parametros.Perfil.AbaMm,
+                        parametros.Perfil.LarguraAlmaMm));
 
-            if (solidos.Count == 0)
+            var uDir = new XYZ(orientacao.VX, orientacao.VY, 0.0);
+            var normalPlano = new XYZ(-orientacao.UX, -orientacao.UY, 0.0);
+            int numero = 0;
+
+            foreach (var conjunto in conjuntos)
             {
-                resultado.Avisos.Add("Travamento da trelica nao gerado: segmento degenerado.");
-                return;
-            }
+                XYZ inicio = PontoMundo(
+                    orientacao, conjunto.UApoioMm, conjunto.VInicioLivreMm, zCentroVigaMm);
 
-            if (parametros.GussetPlacas)
-            {
-                List<MembroTrelica> membros = ComposicaoTrelica.Membros(
-                    parametros.Trelica, guia.ComprimentoMm, parametros.AlturaTrelicaMm, paineis);
-                var posGussets = GussetLaje.Calcular(
-                    membros, guia.ComprimentoMm, parametros.AlturaTrelicaMm);
-                List<Solid> gussets = GussetBuilder.CriarSolidosGussets(
-                    posGussets, inicio, new XYZ(orientacao.VX, orientacao.VY, 0.0), normalPlano, materialGusset);
-                foreach (Solid g in gussets) solidos.Add(g);
-                resultado.ChapasGussetCriadas += gussets.Count;
-            }
+                List<Solid> solidos = TrelicaBuilder.CriarSolidosMembros(
+                    parametros.Perfil, conjunto.Membros, inicio, uDir, normalPlano,
+                    materialTravamento, montagemTravamento, 1.0,
+                    parametros.SecaoBanzo, abrirMontantesParaDentro: true);
 
-            DirectShape ds = StudDirectShapeFactory.CriarElementoMontante(doc, solidos, NomeTravamento);
-            if (ds == null)
-            {
-                resultado.Avisos.Add("Travamento da trelica nao gerado: falha ao criar o DirectShape.");
-                return;
-            }
+                if (solidos.Count != TravamentoLaje.PecasPorConjunto)
+                {
+                    resultado.Avisos.Add(
+                        "Travamento da trelica nao gerado: conjunto nao resultou em cinco pecas.");
+                    continue;
+                }
 
-            GravarIdentidade(ds, lajeId, parametros.Tipo, PapelElementoLaje.Travamento, numero);
-            resultado.TravamentosCriados++;
+                DirectShape ds = StudDirectShapeFactory.CriarElementoMontante(
+                    doc, solidos, NomeTravamento);
+                if (ds == null)
+                {
+                    resultado.Avisos.Add("Travamento da trelica nao gerado: falha ao criar o DirectShape.");
+                    continue;
+                }
+
+                GravarIdentidade(ds, lajeId, parametros.Tipo, PapelElementoLaje.Travamento, numero);
+                numero++;
+                resultado.TravamentosCriados++;
+            }
         }
 
         /// <summary>
         /// Cria as fitas tensionadas que travam as trelicas entre si, quando a opcao esta ligada.
         /// As posicoes sao GEOMETRICAS DE PARTIDA (ver FitasTensionadasLaje), nao normativas.
         /// </summary>
-        private static void CriarFitasTensionadas(
+                private static void CriarFitasTensionadas(
             Document doc,
             ParametrosLaje parametros,
             OrientacaoVigas orientacao,
@@ -410,23 +500,40 @@ namespace LSFRevitPlugin.Services
             ResultadoGeracaoLaje resultado)
         {
             if (!parametros.FitasTensionadas) return;
-            if (parametros.TipoViga != TipoVigaLaje.Trelica) return;
 
             List<FitaTensionada> fitas = FitasTensionadasLaje.Calcular(
                 orientacao, layout, parametros.EspacamentoFitasTensionadasMm);
             if (fitas.Count == 0) return;
 
-            double zTopoBanzoMm = (camadas.TopoVigaMm + camadas.BaseVigaMm) / 2.0
-                + parametros.AlturaTrelicaMm / 2.0;
-            int numero = 0;
+            double zCentroVigaMm = (camadas.TopoVigaMm + camadas.BaseVigaMm) / 2.0;
+            double zFaceInferiorEstruturaMm;
 
+            if (parametros.TipoViga == TipoVigaLaje.Trelica)
+            {
+                zFaceInferiorEstruturaMm = FitasTensionadasLaje.FaceInferiorBanzoInferiorMm(
+                    zCentroVigaMm,
+                    parametros.AlturaTrelicaMm,
+                    parametros.MontagemTrelica,
+                    parametros.Perfil.AbaMm,
+                    parametros.Perfil.LarguraAlmaMm);
+            }
+            else
+            {
+                zFaceInferiorEstruturaMm = zCentroVigaMm - parametros.Perfil.LarguraAlmaMm / 2.0;
+            }
+
+            int numero = 0;
             foreach (FitaTensionada fita in fitas)
             {
-                Solid solido = FitaBuilder.CriarSolidoFita(fita, orientacao, zTopoBanzoMm, materialFita);
-                if (solido == null) continue;
-
-                DirectShape ds = StudDirectShapeFactory.CriarElementoMontante(doc, solido, NomeFita);
-                if (ds == null) continue;
+                Solid solido = FitaBuilder.CriarSolidoFita(
+                    fita, orientacao, zFaceInferiorEstruturaMm, materialFita);
+                DirectShape ds = StudDirectShapeFactory.CriarElemento(
+                    doc, new List<Solid> { solido }, BuiltInCategory.OST_GenericModel, NomeFita);
+                if (ds == null)
+                {
+                    resultado.Avisos.Add("Fita tensionada nao gerada: falha ao criar o DirectShape.");
+                    continue;
+                }
 
                 GravarIdentidade(ds, lajeId, parametros.Tipo, PapelElementoLaje.Fita, numero);
                 numero++;
@@ -448,6 +555,9 @@ namespace LSFRevitPlugin.Services
             int lajeId,
             ResultadoGeracaoLaje resultado)
         {
+            // Composicao Nenhuma significa ausencia total de placas.
+            if (parametros.ComposicaoPlacas == ComposicaoTipo.Nenhuma)
+                return;
             int numero = 0;
             int camadaPlaca = 0;
 
@@ -555,7 +665,10 @@ namespace LSFRevitPlugin.Services
             int numero = 0;
             int foraDoContorno = 0;
             numero += CriarFixadoresDe(fixadores.Estruturais, "LSF - Parafuso estrutural");
-            numero += CriarFixadoresDe(fixadores.Placa, "LSF - Parafuso de placa");
+
+            // Sem composicao de placas, nao gerar parafusos destinados a placas.
+            if (parametros.ComposicaoPlacas != ComposicaoTipo.Nenhuma)
+                numero += CriarFixadoresDe(fixadores.Placa, "LSF - Parafuso de placa");
             resultado.ParafusosCriados += numero;
 
             if (foraDoContorno > 0)

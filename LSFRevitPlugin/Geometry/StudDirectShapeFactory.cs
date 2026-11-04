@@ -39,6 +39,22 @@ namespace LSFRevitPlugin.Geometry
             ds.Name = nome;
             return ds;
         }
+        public static DirectShape CriarElemento(
+            Document doc, IList<Solid> solidos, BuiltInCategory categoria, string nome)
+        {
+            if (solidos == null) return null;
+
+            List<GeometryObject> geometria = solidos
+                .Where(s => s != null)
+                .Cast<GeometryObject>()
+                .ToList();
+            if (geometria.Count == 0) return null;
+
+            DirectShape ds = DirectShape.CreateElement(doc, new ElementId(categoria));
+            ds.SetShape(geometria);
+            ds.Name = nome;
+            return ds;
+        }
     }
 }
 

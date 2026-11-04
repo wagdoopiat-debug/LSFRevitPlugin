@@ -60,6 +60,13 @@ namespace LSFRevitPlugin.UI
             public override string ToString() { return Nome; }
         }
 
+        private sealed class ItemSecaoBanzo
+        {
+            public SecaoBanzoTrelica Tipo;
+            public string Nome;
+            public override string ToString() { return Nome; }
+        }
+
         private sealed class ItemComposicaoCaixao
         {
             public ComposicaoCaixaoTipo Tipo;
@@ -115,6 +122,7 @@ namespace LSFRevitPlugin.UI
             PopularTiposViga();
             PopularTrelicas();
             PopularMontagemTrelica();
+            PopularSecaoBanzo();
             PopularComposicaoCaixao();
             PopularFixadores();
             PopularComposicoes();
@@ -193,10 +201,27 @@ namespace LSFRevitPlugin.UI
             });
             ComboMontagemTrelica.Items.Add(new ItemMontagemTrelica
             {
-                Tipo = MontagemTrelica.BackToBack,
-                Nome = "Back to Back (pecas duplas)"
+                Tipo = MontagemTrelica.FaceComFace,
+                Nome = "Face com Face (perfis C com almas em contato)"
             });
             ComboMontagemTrelica.SelectedIndex = 0;
+        }
+
+        private void PopularSecaoBanzo()
+        {
+            if (ComboSecaoBanzo == null) return;
+            ComboSecaoBanzo.Items.Clear();
+            ComboSecaoBanzo.Items.Add(new ItemSecaoBanzo
+            {
+                Tipo = SecaoBanzoTrelica.C,
+                Nome = "C (com labios)"
+            });
+            ComboSecaoBanzo.Items.Add(new ItemSecaoBanzo
+            {
+                Tipo = SecaoBanzoTrelica.U,
+                Nome = "U (sem labios)"
+            });
+            ComboSecaoBanzo.SelectedIndex = 0;
         }
 
         private void PopularComposicaoCaixao()
@@ -319,6 +344,25 @@ namespace LSFRevitPlugin.UI
         {
             ItemMontagemTrelica item = ComboMontagemTrelica?.SelectedItem as ItemMontagemTrelica;
             return item?.Tipo ?? MontagemTrelica.Encaixada;
+        }
+
+        private void SelecionarSecaoBanzo(SecaoBanzoTrelica secao)
+        {
+            if (ComboSecaoBanzo == null) return;
+            foreach (object item in ComboSecaoBanzo.Items)
+            {
+                if (((ItemSecaoBanzo)item).Tipo == secao)
+                {
+                    ComboSecaoBanzo.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+
+        private SecaoBanzoTrelica LerSecaoBanzo()
+        {
+            ItemSecaoBanzo item = ComboSecaoBanzo?.SelectedItem as ItemSecaoBanzo;
+            return item?.Tipo ?? SecaoBanzoTrelica.C;
         }
 
         private void SelecionarComposicaoCaixao(ComposicaoCaixaoTipo tipo)
@@ -570,6 +614,7 @@ namespace LSFRevitPlugin.UI
                     existente.Trelica, existente.AlturaTrelicaMm,
                     existente.NumeroPaineisTrelica, existente.PainelTrelicaAlvoMm);
                 SelecionarMontagemTrelica(existente.MontagemTrelica);
+                SelecionarSecaoBanzo(existente.SecaoBanzo);
                 if (CheckGussetPlacas != null) CheckGussetPlacas.IsChecked = existente.GussetPlacas;
                 if (CheckFitasTensionadas != null) CheckFitasTensionadas.IsChecked = existente.FitasTensionadas;
                 if (TextEspacamentoFitas != null)
@@ -598,6 +643,7 @@ namespace LSFRevitPlugin.UI
                 SelecionarTrelica(
                     TrelicaTipo.Warren, ComposicaoTrelica.AlturaPadraoMm, null, ComposicaoTrelica.PainelAlvoPadraoMm);
                 SelecionarMontagemTrelica(MontagemTrelica.Encaixada);
+                SelecionarSecaoBanzo(SecaoBanzoTrelica.C);
                 if (CheckGussetPlacas != null) CheckGussetPlacas.IsChecked = false;
                 if (CheckFitasTensionadas != null) CheckFitasTensionadas.IsChecked = false;
                 if (TextEspacamentoFitas != null)
@@ -689,9 +735,9 @@ namespace LSFRevitPlugin.UI
                     ? Visibility.Visible : Visibility.Collapsed;
 
             if (PanelFitas != null)
-                PanelFitas.Visibility = LerTipoViga() == TipoVigaLaje.Trelica
-                    && CheckFitasTensionadas != null && CheckFitasTensionadas.IsChecked == true
-                    ? Visibility.Visible : Visibility.Collapsed;
+                PanelFitas.Visibility = CheckFitasTensionadas != null
+                && CheckFitasTensionadas.IsChecked == true
+                ? Visibility.Visible : Visibility.Collapsed;
 
             if (PanelCaixao != null)
                 PanelCaixao.Visibility = LerTipoViga() == TipoVigaLaje.Caixao
@@ -819,8 +865,7 @@ namespace LSFRevitPlugin.UI
 
             bool fitasTensionadas = CheckFitasTensionadas != null && CheckFitasTensionadas.IsChecked == true;
             double espacamentoFitas = FitasTensionadasLaje.PassoPadraoMm;
-            if (fitasTensionadas && tipoVigaLaje == TipoVigaLaje.Trelica
-                && !TentarLerNumero(TextEspacamentoFitas, out espacamentoFitas))
+            if (fitasTensionadas && !TentarLerNumero(TextEspacamentoFitas, out espacamentoFitas))
             {
                 erro = "Passo das fitas tensionadas invalido. Informe um numero em milimetros.";
                 return null;
@@ -845,6 +890,7 @@ namespace LSFRevitPlugin.UI
                 TipoViga = tipoVigaLaje,
                 Trelica = trelicaTipo,
                 MontagemTrelica = LerMontagemTrelica(),
+                SecaoBanzo = LerSecaoBanzo(),
                 GussetPlacas = CheckGussetPlacas != null && CheckGussetPlacas.IsChecked == true,
                 FitasTensionadas = fitasTensionadas,
                 EspacamentoFitasTensionadasMm = espacamentoFitas,

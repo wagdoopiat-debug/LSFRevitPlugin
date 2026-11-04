@@ -90,18 +90,10 @@ namespace LSFRevitPlugin.Domain.Laje
         /// </summary>
         public static void DimensoesOrientadas(bool osb, out double aoLongoUMm, out double transversalVMm)
         {
-            if (osb)
-            {
-                // OSB: lado menor (largura) ao longo da viga; lado maior (comprimento) transversal.
-                aoLongoUMm = LarguraOSBMm;
-                transversalVMm = ComprimentoOSBMm;
-            }
-            else
-            {
-                // Cimenticia: rotacionada 90 graus -- lado maior (comprimento) ao longo da viga.
-                aoLongoUMm = ComprimentoCimenticiaMm;
-                transversalVMm = LarguraCimenticiaMm;
-            }
+            // OSB e cimenticia seguem a mesma orientacao.
+            // Lado menor ao longo das vigas (U), lado maior transversal (V).
+            aoLongoUMm = osb ? LarguraOSBMm : LarguraCimenticiaMm;
+            transversalVMm = osb ? ComprimentoOSBMm : ComprimentoCimenticiaMm;
         }
 
         /// <summary>true quando a camada e de OSB (ou piso seco do catalogo, tratado como OSB).</summary>

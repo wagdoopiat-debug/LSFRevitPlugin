@@ -4,13 +4,13 @@ namespace LSFRevitPlugin.Domain.Laje
 {
     /// <summary>
     /// Montagem construtiva das pecas da trelica (independente do tipo de trelica). Afeta a
-    /// geometria: Encaixada gera pecas unicas; BackToBack gera cada peca como dois "C" costas com
+    /// geometria: Encaixada gera pecas unicas; FaceComFace usa perfis C unicos com as almas em contato;
     /// costas (banzos e web acompanham a mesma configuracao).
     /// </summary>
     public enum MontagemTrelica
     {
         Encaixada,
-        BackToBack
+        FaceComFace
     }
 
     /// <summary>
@@ -100,19 +100,11 @@ namespace LSFRevitPlugin.Domain.Laje
 
         /// <summary>
         /// Sub-perfis de uma peca da trelica conforme a montagem escolhida: Encaixada gera uma
-        /// peca unica; BackToBack gera duas em costas-com-costas (almas juntas, abas para fora).
+        /// peca unica; FaceComFace gera um perfil C por barra, com almas dos membros em contato.
         /// </summary>
         public static List<SubPerfilViga> SubPerfisMontagem(MontagemTrelica montagem, Models.PerfilSpec perfil)
         {
             var lista = new List<SubPerfilViga>();
-
-            if (montagem == MontagemTrelica.BackToBack && perfil != null)
-            {
-                double meio = perfil.AbaMm / 2.0;
-                lista.Add(new SubPerfilViga(+meio, espelhado: false));
-                lista.Add(new SubPerfilViga(-meio, espelhado: true));
-                return lista;
-            }
 
             lista.Add(new SubPerfilViga(0.0, espelhado: false));
             return lista;
@@ -136,6 +128,11 @@ namespace LSFRevitPlugin.Domain.Laje
         /// Largura transversal total (mm) em funcao de todas as decisoes geometricas: tipo de
         /// viga, montagem da trelica e composicao do caixao. Fonte unica -- os call sites de
         /// layout/recuo DEVEM usar esta sobrecarga para nao divergirem dos solidos gerados.
+        ///
+        /// Na trelica Encaixada todas as barras ficam centradas no eixo e a ALMA do perfil corre
+        /// na direcao transversal; portanto a largura fisica e LarguraAlmaMm (nao a aba). Na
+        /// FaceComFace os banzos ficam de um lado do plano e os montantes/diagonais do outro,
+        /// resultando em 2*AbaMm.
         /// </summary>
         public static double LarguraTransversalMm(
             TipoVigaLaje tipo, Models.PerfilSpec perfil, MontagemTrelica montagem,
@@ -143,10 +140,14 @@ namespace LSFRevitPlugin.Domain.Laje
         {
             if (perfil == null) return 0.0;
             if (tipo == TipoVigaLaje.BackToBack) return perfil.AbaMm * 2.0;
-            if (tipo == TipoVigaLaje.Trelica && montagem == MontagemTrelica.BackToBack)
-                return perfil.AbaMm * 2.0;
             if (tipo == TipoVigaLaje.Caixao && caixao == ComposicaoCaixaoTipo.Encaixados)
                 return perfil.AbaMm * 2.0;
+            if (tipo == TipoVigaLaje.Trelica)
+            {
+                return montagem == MontagemTrelica.FaceComFace
+                    ? perfil.AbaMm * 2.0
+                    : perfil.LarguraAlmaMm;
+            }
             return perfil.AbaMm;
         }
     }

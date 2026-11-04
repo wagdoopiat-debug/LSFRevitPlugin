@@ -74,7 +74,25 @@ namespace LSFRevitPlugin.Core
 
             panel.AddItem(editarLajeData);
 
+            PushButtonData excluirLajeData = new PushButtonData(
+                "LSFModelerExcluirLaje",
+                "Excluir\nlaje",
+                assemblyPath,
+                "LSFRevitPlugin.Core.ExcluirLajeCommand");
 
+            excluirLajeData.ToolTip = "Exclui uma laje do LSF Modeler pelo registro do documento. Remove apenas elementos identificados daquela laje e preserva outras lajes e elementos externos.";
+
+            panel.AddItem(excluirLajeData);
+
+            PushButtonData excluirTodasLajesData = new PushButtonData(
+                "LSFModelerExcluirTodasLajes",
+                "Excluir\ntodas",
+                assemblyPath,
+                "LSFRevitPlugin.Core.ExcluirTodasLajesCommand");
+
+            excluirTodasLajesData.ToolTip = "Exclui todas as lajes do LSF Modeler do documento. A varredura usa a identidade persistente e preserva elementos externos.";
+
+            panel.AddItem(excluirTodasLajesData);
 
             return Result.Succeeded;
         }

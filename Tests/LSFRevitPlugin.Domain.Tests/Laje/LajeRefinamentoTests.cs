@@ -420,14 +420,14 @@ namespace LSFRevitPlugin.Domain.Tests.Laje
             Assert.Equal(aba * 2.0, ComposicaoViga.LarguraTransversalMm(
                 TipoVigaLaje.BackToBack, perfil, MontagemTrelica.Encaixada,
                 ComposicaoCaixaoTipo.Encaixados), 6);
-            Assert.Equal(aba, ComposicaoViga.LarguraTransversalMm(
+            Assert.Equal(perfil.LarguraAlmaMm, ComposicaoViga.LarguraTransversalMm(
                 TipoVigaLaje.Trelica, perfil, MontagemTrelica.Encaixada,
                 ComposicaoCaixaoTipo.Encaixados), 6);
             Assert.Equal(aba * 2.0, ComposicaoViga.LarguraTransversalMm(
-                TipoVigaLaje.Trelica, perfil, MontagemTrelica.BackToBack,
+                TipoVigaLaje.Trelica, perfil, MontagemTrelica.FaceComFace,
                 ComposicaoCaixaoTipo.FrenteAFrente), 6);
             Assert.Equal(0.0, ComposicaoViga.LarguraTransversalMm(
-                TipoVigaLaje.Caixao, null, MontagemTrelica.BackToBack,
+                TipoVigaLaje.Caixao, null, MontagemTrelica.FaceComFace,
                 ComposicaoCaixaoTipo.Encaixados), 6);
         }
 
@@ -469,13 +469,22 @@ namespace LSFRevitPlugin.Domain.Tests.Laje
         }
 
         [Fact]
+        public void Secao_do_banzo_U_remove_os_labios_e_C_preserva()
+        {
+            Assert.Equal(15.0, SecaoBanzoTrelicaRegra.LabioMm(SecaoBanzoTrelica.C, 15.0), 6);
+            Assert.Equal(0.0, SecaoBanzoTrelicaRegra.LabioMm(SecaoBanzoTrelica.U, 15.0), 6);
+            Assert.Equal(0.0, SecaoBanzoTrelicaRegra.LabioMm(SecaoBanzoTrelica.C, -1.0), 6);
+        }
+
+        [Fact]
         public void Persistencia_preserva_montagem_caixao_e_gussets()
         {
             var p = new ParametrosLaje
             {
                 Contorno = Retangulo(),
                 TipoViga = TipoVigaLaje.Trelica,
-                MontagemTrelica = MontagemTrelica.BackToBack,
+                MontagemTrelica = MontagemTrelica.FaceComFace,
+                SecaoBanzo = SecaoBanzoTrelica.U,
                 ComposicaoCaixao = ComposicaoCaixaoTipo.Encaixados,
                 GussetPlacas = true
             };
@@ -484,7 +493,8 @@ namespace LSFRevitPlugin.Domain.Tests.Laje
             Assert.True(ConfiguracaoLajeTexto.TentarDeserializar(
                 ConfiguracaoLajeTexto.Serializar(p), out lido));
 
-            Assert.Equal(MontagemTrelica.BackToBack, lido.MontagemTrelica);
+            Assert.Equal(MontagemTrelica.FaceComFace, lido.MontagemTrelica);
+            Assert.Equal(SecaoBanzoTrelica.U, lido.SecaoBanzo);
             Assert.Equal(ComposicaoCaixaoTipo.Encaixados, lido.ComposicaoCaixao);
             Assert.True(lido.GussetPlacas);
         }
@@ -497,6 +507,7 @@ namespace LSFRevitPlugin.Domain.Tests.Laje
             ParametrosLaje lido;
             Assert.True(ConfiguracaoLajeTexto.TentarDeserializar(texto, out lido));
             Assert.Equal(MontagemTrelica.Encaixada, lido.MontagemTrelica);
+            Assert.Equal(SecaoBanzoTrelica.C, lido.SecaoBanzo);
             Assert.Equal(ComposicaoCaixaoTipo.FrenteAFrente, lido.ComposicaoCaixao);
             Assert.False(lido.GussetPlacas);
         }

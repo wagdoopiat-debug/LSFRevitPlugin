@@ -25,10 +25,16 @@ namespace LSFRevitPlugin.Domain.Laje
         public TrelicaTipo Trelica { get; set; } = TrelicaTipo.Warren;
 
         /// <summary>
-        /// Montagem construtiva das pecas da trelica (Encaixada ou BackToBack) quando TipoViga =
+        /// Montagem construtiva das pecas da trelica (Encaixada ou FaceComFace) quando TipoViga =
         /// Trelica. Independente do tipo de trelica escolhido.
         /// </summary>
         public MontagemTrelica MontagemTrelica { get; set; } = MontagemTrelica.Encaixada;
+
+        /// <summary>
+        /// Secao dos banzos da trelica: "C" (com labios, padrao) ou "U" (sem labios). Vale para
+        /// as duas montagens.
+        /// </summary>
+        public SecaoBanzoTrelica SecaoBanzo { get; set; } = SecaoBanzoTrelica.C;
 
         /// <summary>
         /// Indica se deve gerar chapas de gusset (ligacoes) nas juntas da trelica. Opcional,
@@ -194,13 +200,13 @@ namespace LSFRevitPlugin.Domain.Laje
                 }
             }
 
-            if (FitasTensionadas && TipoViga == TipoVigaLaje.Trelica
-                && (double.IsNaN(EspacamentoFitasTensionadasMm)
-                    || double.IsInfinity(EspacamentoFitasTensionadasMm)
-                    || EspacamentoFitasTensionadasMm <= 0.0))
-            {
-                erros.Add("Passo das fitas tensionadas deve ser maior que zero.");
-            }
+            if (FitasTensionadas
+    && (double.IsNaN(EspacamentoFitasTensionadasMm)
+        || double.IsInfinity(EspacamentoFitasTensionadasMm)
+        || EspacamentoFitasTensionadasMm <= 0.0))
+{
+    erros.Add("Passo das fitas tensionadas deve ser maior que zero.");
+}
 
             if (NivelFixadores != NivelDetalheFixadores.Oculto
                 && (double.IsNaN(EspacamentoFixadoresPlacaMm) || double.IsInfinity(EspacamentoFixadoresPlacaMm)

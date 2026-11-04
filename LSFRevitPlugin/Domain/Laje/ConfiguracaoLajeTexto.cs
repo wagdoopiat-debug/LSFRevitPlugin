@@ -30,6 +30,7 @@ namespace LSFRevitPlugin.Domain.Laje
                 "tipoViga=" + p.TipoViga,
                 "trelica=" + p.Trelica,
                 "montagemTrelica=" + p.MontagemTrelica,
+                "secaoBanzo=" + p.SecaoBanzo,
                 "gussetPlacas=" + p.GussetPlacas,
                 "composicaoCaixao=" + p.ComposicaoCaixao,
                 "alturaTrelica=" + Num(p.AlturaTrelicaMm),
@@ -109,6 +110,11 @@ namespace LSFRevitPlugin.Domain.Laje
             if (campos.TryGetValue("montagemTrelica", out string montagemTexto)
                 && Enum.TryParse(montagemTexto, out montagemTrelica))
                 p.MontagemTrelica = montagemTrelica;
+
+            SecaoBanzoTrelica secaoBanzo;
+            if (campos.TryGetValue("secaoBanzo", out string secaoBanzoTexto)
+                && Enum.TryParse(secaoBanzoTexto, out secaoBanzo))
+                p.SecaoBanzo = secaoBanzo;
 
             bool gusset;
             if (campos.TryGetValue("gussetPlacas", out string gussetTexto)
